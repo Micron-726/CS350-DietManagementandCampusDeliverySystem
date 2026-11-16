@@ -6,17 +6,41 @@ are referenced in comments in `src/db/schema.ts`.
 
 ## Setup
 
-Requires Node.js and Docker (for the local Supabase stack).
+The team shares one hosted Supabase project (Tokyo, `mgsnustjmswvuhanhofw`). To work on the app
+you only need Node.js:
 
 ```bash
 npm install
-npm run db:start            # start local Supabase (Docker); prints URLs and keys
-cp .env.example .env.local  # then paste the publishable key from `npx supabase status`
-npm run db:reset            # apply migrations + load demo data (supabase/seed.sql)
+cp .env.example .env.local  # fill in the publishable key and the DB password (ask a teammate)
 npm run dev                 # http://localhost:3000
 ```
 
-Sign up on `/login` with any email and password. Local email confirmation is off.
+Sign up on `/login` with any email and password.
+
+### Local stack (for schema changes)
+
+Test migrations on a local database before they reach the shared one. Requires Docker.
+
+```bash
+npm run db:start            # start local Supabase; prints URLs and keys
+# in .env.local, switch to the "Local stack" block from .env.example
+npm run db:reset            # apply migrations + load demo data (supabase/seed.sql)
+```
+
+### Applying migrations to the shared project
+
+One person at a time, after the migration is merged to `main`. The DB password isn't needed:
+the CLI uses your Supabase login, so you need to be a member of the project's organization.
+
+```bash
+npx supabase login
+npx supabase link --project-ref mgsnustjmswvuhanhofw   # once per clone
+npx supabase db push --remote --dry-run                # preview
+npx supabase db push --remote
+```
+
+Never run `db reset --remote`, and don't change tables in the hosted dashboard. Every schema
+change goes through a migration.
 
 ## Commands
 
