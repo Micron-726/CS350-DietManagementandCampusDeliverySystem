@@ -85,6 +85,9 @@ user can see, use the app or supabase-js.
   `npx drizzle-kit generate --custom --name=<name>`.
 - A new table with an `updated_at` column also needs a `set_updated_at` trigger
   (see `supabase/migrations/*_triggers.sql`).
+- New tables are **not reachable from supabase-js** until granted (`auto_expose_new_tables = false`,
+  same as the hosted project). Add `grant ... to authenticated` in a custom migration, following
+  `supabase/migrations/*_grants.sql`. Without it you get `permission denied for table ...`.
 - If `db:generate` asks whether a column was renamed or replaced, answer in the terminal; it
   needs an interactive shell.
 
