@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794804420933,
+      "tag": "20261116044700_extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794804424297,
+      "tag": "20261116044704_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794804429038,
+      "tag": "20261116044709_triggers",
+      "breakpoints": true
+    }
+  ]
+}
