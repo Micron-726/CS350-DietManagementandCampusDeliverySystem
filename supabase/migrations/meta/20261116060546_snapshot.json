@@ -1,6 +1,6 @@
 {
-  "id": "5d293d0f-f306-44b0-8e1b-7f31c7392bae",
-  "prevId": "2cb1588a-3928-484a-9b38-8ab8224a6758",
+  "id": "3e897573-4b7e-432e-8a6e-20fa536c70b3",
+  "prevId": "e72f6845-1cc3-4100-b1c3-ca69b4233d1d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -84,15 +84,15 @@
         "deliveries_order_id_orders_id_fk": {
           "name": "deliveries_order_id_orders_id_fk",
           "tableFrom": "deliveries",
-          "tableTo": "orders",
           "columnsFrom": [
             "order_id"
           ],
+          "tableTo": "orders",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -210,27 +210,27 @@
         "diet_goals_user_id_users_id_fk": {
           "name": "diet_goals_user_id_users_id_fk",
           "tableFrom": "diet_goals",
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "diet_goals_user_date_uq": {
           "name": "diet_goals_user_date_uq",
-          "nullsNotDistinct": false,
           "columns": [
             "user_id",
             "effective_from"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {
@@ -267,15 +267,15 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "always",
             "name": "integration_logs_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "9223372036854775807",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
           }
         },
         "provider_id": {
@@ -339,28 +339,28 @@
         "integration_logs_provider_id_providers_id_fk": {
           "name": "integration_logs_provider_id_providers_id_fk",
           "tableFrom": "integration_logs",
-          "tableTo": "providers",
           "columnsFrom": [
             "provider_id"
           ],
+          "tableTo": "providers",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "integration_logs_order_id_orders_id_fk": {
           "name": "integration_logs_order_id_orders_id_fk",
           "tableFrom": "integration_logs",
-          "tableTo": "orders",
           "columnsFrom": [
             "order_id"
           ],
+          "tableTo": "orders",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -505,9 +505,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "meal_logs_order_item_uq": {
           "name": "meal_logs_order_item_uq",
@@ -520,52 +520,52 @@
             }
           ],
           "isUnique": true,
-          "where": "\"meal_logs\".\"order_item_id\" is not null",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "\"meal_logs\".\"order_item_id\" is not null",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "meal_logs_user_id_users_id_fk": {
           "name": "meal_logs_user_id_users_id_fk",
           "tableFrom": "meal_logs",
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "meal_logs_menu_item_id_menu_items_id_fk": {
           "name": "meal_logs_menu_item_id_menu_items_id_fk",
           "tableFrom": "meal_logs",
-          "tableTo": "menu_items",
           "columnsFrom": [
             "menu_item_id"
           ],
+          "tableTo": "menu_items",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "meal_logs_order_item_id_order_items_id_fk": {
           "name": "meal_logs_order_item_id_order_items_id_fk",
           "tableFrom": "meal_logs",
-          "tableTo": "order_items",
           "columnsFrom": [
             "order_item_id"
           ],
+          "tableTo": "order_items",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -672,25 +672,25 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "meal_searches_user_id_users_id_fk": {
           "name": "meal_searches_user_id_users_id_fk",
           "tableFrom": "meal_searches",
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -785,24 +785,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "menu_components_menu_item_id_menu_items_id_fk": {
           "name": "menu_components_menu_item_id_menu_items_id_fk",
           "tableFrom": "menu_components",
-          "tableTo": "menu_items",
           "columnsFrom": [
             "menu_item_id"
           ],
+          "tableTo": "menu_items",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -948,9 +948,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "menu_items_kcal_protein_idx": {
           "name": "menu_items_kcal_protein_idx",
@@ -969,9 +969,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "menu_items_price_idx": {
           "name": "menu_items_price_idx",
@@ -984,35 +984,35 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "menu_items_restaurant_id_restaurants_id_fk": {
           "name": "menu_items_restaurant_id_restaurants_id_fk",
           "tableFrom": "menu_items",
-          "tableTo": "restaurants",
           "columnsFrom": [
             "restaurant_id"
           ],
+          "tableTo": "restaurants",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "menu_items_restaurant_external_uq": {
           "name": "menu_items_restaurant_external_uq",
-          "nullsNotDistinct": false,
           "columns": [
             "restaurant_id",
             "external_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {
@@ -1052,15 +1052,15 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "always",
             "name": "order_events_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "9223372036854775807",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "always"
           }
         },
         "order_id": {
@@ -1119,24 +1119,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "order_events_order_id_orders_id_fk": {
           "name": "order_events_order_id_orders_id_fk",
           "tableFrom": "order_events",
-          "tableTo": "orders",
           "columnsFrom": [
             "order_id"
           ],
+          "tableTo": "orders",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -1255,37 +1255,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "order_items_order_id_orders_id_fk": {
           "name": "order_items_order_id_orders_id_fk",
           "tableFrom": "order_items",
-          "tableTo": "orders",
           "columnsFrom": [
             "order_id"
           ],
+          "tableTo": "orders",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "order_items_menu_item_id_menu_items_id_fk": {
           "name": "order_items_menu_item_id_menu_items_id_fk",
           "tableFrom": "order_items",
-          "tableTo": "menu_items",
           "columnsFrom": [
             "menu_item_id"
           ],
+          "tableTo": "menu_items",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -1443,69 +1443,69 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "orders_user_id_users_id_fk": {
           "name": "orders_user_id_users_id_fk",
           "tableFrom": "orders",
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "orders_provider_id_providers_id_fk": {
           "name": "orders_provider_id_providers_id_fk",
           "tableFrom": "orders",
-          "tableTo": "providers",
           "columnsFrom": [
             "provider_id"
           ],
+          "tableTo": "providers",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "orders_restaurant_id_restaurants_id_fk": {
           "name": "orders_restaurant_id_restaurants_id_fk",
           "tableFrom": "orders",
-          "tableTo": "restaurants",
           "columnsFrom": [
             "restaurant_id"
           ],
+          "tableTo": "restaurants",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "orders_idempotencyKey_unique": {
           "name": "orders_idempotencyKey_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "idempotency_key"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "orders_provider_order_uq": {
           "name": "orders_provider_order_uq",
-          "nullsNotDistinct": false,
           "columns": [
             "provider_id",
             "provider_order_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {
@@ -1607,24 +1607,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "payments_order_id_orders_id_fk": {
           "name": "payments_order_id_orders_id_fk",
           "tableFrom": "payments",
-          "tableTo": "orders",
           "columnsFrom": [
             "order_id"
           ],
+          "tableTo": "orders",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -1747,36 +1747,36 @@
             }
           ],
           "isUnique": true,
-          "where": "\"portion_levels\".\"is_default\"",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "\"portion_levels\".\"is_default\"",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "portion_levels_component_id_menu_components_id_fk": {
           "name": "portion_levels_component_id_menu_components_id_fk",
           "tableFrom": "portion_levels",
-          "tableTo": "menu_components",
           "columnsFrom": [
             "component_id"
           ],
+          "tableTo": "menu_components",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "portion_levels_component_level_uq": {
           "name": "portion_levels_component_level_uq",
-          "nullsNotDistinct": false,
           "columns": [
             "component_id",
             "level"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {
@@ -1902,16 +1902,16 @@
         "profiles_id_users_id_fk": {
           "name": "profiles_id_users_id_fk",
           "tableFrom": "profiles",
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsFrom": [
             "id"
           ],
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -2027,10 +2027,10 @@
       "uniqueConstraints": {
         "providers_code_unique": {
           "name": "providers_code_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "code"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {
@@ -2106,16 +2106,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "geo": {
-          "name": "geo",
-          "type": "geography",
-          "primaryKey": false,
-          "notNull": false,
-          "generated": {
-            "as": "(st_setsrid(st_makepoint(lng, lat), 4326))::geography",
-            "type": "stored"
-          }
-        },
         "image_url": {
           "name": "image_url",
           "type": "text",
@@ -2163,47 +2153,31 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "restaurants_geo_gist": {
-          "name": "restaurants_geo_gist",
-          "columns": [
-            {
-              "expression": "geo",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gist",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "restaurants_provider_id_providers_id_fk": {
           "name": "restaurants_provider_id_providers_id_fk",
           "tableFrom": "restaurants",
-          "tableTo": "providers",
           "columnsFrom": [
             "provider_id"
           ],
+          "tableTo": "providers",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "restaurants_provider_external_uq": {
           "name": "restaurants_provider_external_uq",
-          "nullsNotDistinct": false,
           "columns": [
             "provider_id",
             "external_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {
@@ -2289,25 +2263,25 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "weight_logs_user_id_users_id_fk": {
           "name": "weight_logs_user_id_users_id_fk",
           "tableFrom": "weight_logs",
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -2471,10 +2445,10 @@
     }
   },
   "schemas": {},
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

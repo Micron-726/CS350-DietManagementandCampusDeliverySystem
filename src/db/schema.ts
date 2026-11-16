@@ -27,7 +27,6 @@ import {
   bigint,
   boolean,
   check,
-  customType,
   date,
   doublePrecision,
   index,
@@ -128,11 +127,6 @@ const ownerId = () =>
 
 /** Plain coordinates (WGS84) — easy to read/write from both Drizzle and supabase-js. */
 const latLng = () => ({ lat: doublePrecision(), lng: doublePrecision() });
-
-/** PostGIS geography point; distances come out in meters. Needs the PostGIS extension. */
-const geographyPoint = customType<{ data: string }>({
-  dataType: () => "geography", // SRID defaults to 4326 for geography
-});
 
 /** A nutrition value labelled "unavailable" must be empty (IR-05, OR-03/04). */
 const unavailableMeansNull = (name: string, source: AnyPgColumn, value: AnyPgColumn) =>
@@ -369,10 +363,13 @@ export const restaurants = pgTable(
     address: text(),
     campusArea: text(), // e.g. "N11", "W2" — handy on campus
     ...latLng(), // null = unknown → excluded from distance-filtered search (FR-22)
-    /** Derived from lat/lng by Postgres; never write it. Use for ST_DWithin / ST_Distance. */
-    geo: geographyPoint().generatedAlwaysAs(
-      sql`(st_setsrid(st_makepoint(lng, lat), 4326))::geography`,
-    ),
+    /*
+     * `geo extensions.geography(Point, 4326)` — generated from lat/lng, GIST-indexed — lives in
+     * the `postgis` migration, NOT here: drizzle-kit can't emit a schema-qualified custom type,
+     * and the hosted DB doesn't have `extensions` on the migration search_path. Drizzle ignores
+     * the column. Distance search (FR-22) uses raw SQL, e.g.
+     *   sql`extensions.st_dwithin(${restaurants}.geo, extensions.st_makepoint(${lng}, ${lat})::extensions.geography, ${meters})`
+     */
     imageUrl: text(),
     /** Opening hours as the provider sends them, normalized by the sync job. */
     openingHours: jsonb().$type<OpeningHours>(),
@@ -384,7 +381,6 @@ export const restaurants = pgTable(
   },
   (t) => [
     unique("restaurants_provider_external_uq").on(t.providerId, t.externalId),
-    index("restaurants_geo_gist").using("gist", t.geo),
     signedInRead("restaurants"),
   ],
 );

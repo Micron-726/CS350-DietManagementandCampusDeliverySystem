@@ -1,6 +1,6 @@
 {
-  "id": "7c7139c6-962e-4e08-9ad1-26051ad7aad1",
-  "prevId": "cf274331-caf8-4e66-bfdc-59526b82b836",
+  "id": "09d7f6c9-3a8a-4660-91ce-f7350a264663",
+  "prevId": "3e897573-4b7e-432e-8a6e-20fa536c70b3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2106,16 +2106,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "geo": {
-          "name": "geo",
-          "type": "geography",
-          "primaryKey": false,
-          "notNull": false,
-          "generated": {
-            "type": "stored",
-            "as": "(st_setsrid(st_makepoint(lng, lat), 4326))::geography"
-          }
-        },
         "image_url": {
           "name": "image_url",
           "type": "text",
@@ -2163,23 +2153,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "restaurants_geo_gist": {
-          "name": "restaurants_geo_gist",
-          "columns": [
-            {
-              "expression": "geo",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "gist",
-          "concurrently": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "restaurants_provider_id_providers_id_fk": {
           "name": "restaurants_provider_id_providers_id_fk",

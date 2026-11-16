@@ -273,7 +273,6 @@ CREATE TABLE "restaurants" (
 	"campus_area" text,
 	"lat" double precision,
 	"lng" double precision,
-	"geo" "geography" GENERATED ALWAYS AS ((st_setsrid(st_makepoint(lng, lat), 4326))::geography) STORED,
 	"image_url" text,
 	"opening_hours" jsonb,
 	"accepting_orders" boolean DEFAULT false NOT NULL,
@@ -330,7 +329,6 @@ CREATE INDEX "order_items_order_idx" ON "order_items" USING btree ("order_id");-
 CREATE INDEX "orders_user_time_idx" ON "orders" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX "payments_order_idx" ON "payments" USING btree ("order_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "portion_levels_one_default_uq" ON "portion_levels" USING btree ("component_id") WHERE "portion_levels"."is_default";--> statement-breakpoint
-CREATE INDEX "restaurants_geo_gist" ON "restaurants" USING gist ("geo");--> statement-breakpoint
 CREATE INDEX "weight_logs_user_time_idx" ON "weight_logs" USING btree ("user_id","recorded_at");--> statement-breakpoint
 CREATE POLICY "deliveries: order owner read" ON "deliveries" AS PERMISSIVE FOR SELECT TO "authenticated" USING (exists (select 1 from orders o where o.id = "deliveries"."order_id" and o.user_id = (select auth.uid())));--> statement-breakpoint
 CREATE POLICY "diet_goals: owner full access" ON "diet_goals" AS PERMISSIVE FOR ALL TO "authenticated" USING ("diet_goals"."user_id" = (select auth.uid())) WITH CHECK ("diet_goals"."user_id" = (select auth.uid()));--> statement-breakpoint
