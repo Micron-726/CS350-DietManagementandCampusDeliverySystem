@@ -22,8 +22,13 @@ export async function updateSession(request: NextRequest) {
 
   // Don't put code between createServerClient and getClaims()
   const { data } = await supabase.auth.getClaims();
+  // Signed-out users may only open these. Role checks (customer vs restaurant) happen in pages and
+  // Server Actions via requireAccount() in @/lib/auth, since they need a DB read.
   const path = request.nextUrl.pathname;
-  if (!data?.claims && !path.startsWith("/login") && !path.startsWith("/auth")) {
+  const isPublic = ["/login", "/signup", "/auth"].some(
+    (p) => path === p || path.startsWith(`${p}/`),
+  );
+  if (!data?.claims && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

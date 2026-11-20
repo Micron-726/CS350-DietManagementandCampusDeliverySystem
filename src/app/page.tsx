@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { menuItems } from "@/db/schema";
 import { asc } from "drizzle-orm";
+import Link from "next/link";
+import { requireAccount } from "@/lib/auth";
 import { logout } from "./login/actions";
 
 export default function Home() {
@@ -23,8 +25,9 @@ async function Dashboard() {
   // (token expiry checks) and we read new Date() for "today", which Next rejects in a prerender.
   await connection();
 
+  // Student home. Store accounts are sent to /store.
+  const account = await requireAccount("customer");
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
 
   // personal → supabase-js (RLS applies)
   const today = new Date().toLocaleDateString("sv-SE", {
@@ -44,7 +47,8 @@ async function Dashboard() {
 
   return (
     <>
-      <p>Signed in as {claims?.claims.email}</p>
+      <p>Signed in as {account.email}</p>
+      <Link href="/account" className="underline">내 계정</Link>
       <pre>{JSON.stringify({ logs, menu }, null, 2)}</pre>
       <form action={logout}>
         <button className="rounded border px-3 py-1">Log out</button>

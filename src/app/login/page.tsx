@@ -1,38 +1,47 @@
 import { Suspense } from "react";
-import { login, signup } from "./actions";
+import Link from "next/link";
+import { RedirectIfSignedIn } from "@/components/auth/redirect-if-signed-in";
 
-type SearchParams = Promise<{ error?: string }>;
+type SearchParams = Promise<{ deleted?: string }>;
 
+/** Step 1 of login: choose the account type. */
 export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <main className="mx-auto mt-24 max-w-sm p-6">
-      <h1 className="mb-6 text-2xl font-semibold">Sign in</h1>
-      <form className="flex flex-col gap-3">
-        <input name="email" type="email" placeholder="Email" required className="rounded border p-2" />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password (min 6 chars)"
-          required
-          minLength={6}
-          className="rounded border p-2"
-        />
-        {/* searchParams is request data: resolve it inside a boundary so the form prerenders. */}
-        <Suspense fallback={null}>
-          <LoginError searchParams={searchParams} />
-        </Suspense>
-        <button formAction={login} className="rounded bg-black p-2 text-white">
-          Log in
-        </button>
-        <button formAction={signup} className="rounded border p-2">
-          Sign up
-        </button>
-      </form>
+    <main className="mx-auto w-full max-w-sm px-4 py-16">
+      <Suspense fallback={null}>
+        <RedirectIfSignedIn />
+        <DeletedNotice searchParams={searchParams} />
+      </Suspense>
+
+      <h1 className="mb-2 text-2xl font-semibold">로그인</h1>
+      <p className="mb-6 text-sm text-neutral-500">계정 유형을 선택해 주세요.</p>
+
+      <div className="flex flex-col gap-3">
+        <Link href="/login/student" className="rounded-lg border p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900">
+          <span className="block font-medium">학생 로그인</span>
+          <span className="text-sm text-neutral-500">@kaist.ac.kr 계정으로 식단 관리·메뉴 검색</span>
+        </Link>
+        <Link href="/login/store" className="rounded-lg border p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900">
+          <span className="block font-medium">가게 로그인</span>
+          <span className="text-sm text-neutral-500">교내 식당 메뉴·주문 관리</span>
+        </Link>
+      </div>
+
+      <p className="mt-8 text-center text-sm text-neutral-500">
+        계정이 없으신가요?{" "}
+        <Link href="/signup" className="underline">학생 회원가입</Link>
+        {" · "}
+        <Link href="/signup/store" className="underline">가게 계정 신청</Link>
+      </p>
     </main>
   );
 }
 
-async function LoginError({ searchParams }: { searchParams: SearchParams }) {
-  const { error } = await searchParams;
-  return error ? <p className="text-sm text-red-600">{error}</p> : null;
+async function DeletedNotice({ searchParams }: { searchParams: SearchParams }) {
+  const { deleted } = await searchParams;
+  return deleted ? (
+    <p role="status" className="mb-6 rounded border p-3 text-sm">
+      탈퇴가 완료되었습니다. 계정과 기록이 모두 삭제되었습니다.
+    </p>
+  ) : null;
 }
