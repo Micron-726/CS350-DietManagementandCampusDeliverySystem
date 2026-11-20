@@ -96,3 +96,13 @@ values
   -- Beef Steak Plate: meat
   ('40000000-0000-4000-8000-000000000011', 0, 'Regular', true,      0,    0, 'estimated',  0, 'estimated'),
   ('40000000-0000-4000-8000-000000000011', 1, 'Extra',   false,  6000,  300, 'estimated', 30, 'estimated');
+
+-- ───────────────────────────── Demo accounts ─────────────────────────────
+-- Local only. Log in on /login:
+--   student  student@kaist.ac.kr / student   customer
+--   store    store@gmail.com     / store     restaurant, owns "W2 Bowl House"
+-- admin_create_account (see the account migration) skips the 6-character minimum, which Auth
+-- enforces on sign-up only, so the short demo passwords still log in.
+select public.admin_create_account('student@kaist.ac.kr', 'student', 'customer', 'Demo Student');
+select public.admin_create_account('store@gmail.com', 'store', 'restaurant', 'W2 Bowl House',
+                                   '20000000-0000-4000-8000-000000000002');

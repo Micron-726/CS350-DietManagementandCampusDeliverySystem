@@ -47,6 +47,13 @@ import { authenticatedRole, authUid, authUsers } from "drizzle-orm/supabase";
 
 /* ───────────────────────────── Enums ───────────────────────────── */
 
+/**
+ * Account type (NFR-05). Set once by the `handle_new_user` trigger and never by the user:
+ * - customer: KAIST member, self sign-up with an @kaist.ac.kr email (FR-01)
+ * - restaurant: store account, created by an admin (`app_metadata.role = 'restaurant'`)
+ */
+export const accountRoleEnum = pgEnum("account_role", ["customer", "restaurant"]);
+
 export const sexEnum = pgEnum("sex", ["male", "female"]);
 export const activityLevelEnum = pgEnum("activity_level", [
   "sedentary",
@@ -174,6 +181,8 @@ export const profiles = pgTable(
     id: uuid()
       .primaryKey()
       .references(() => authUsers.id, { onDelete: "cascade" }),
+    /** Read-only for the user: excluded from the column-level UPDATE grant (`account` migration). */
+    role: accountRoleEnum().notNull().default("customer"),
     displayName: text(),
     heightCm: real(),
     /** Current weight used for target calculation. History lives in weight_logs. */
@@ -358,6 +367,8 @@ export const restaurants = pgTable(
       .notNull()
       .references(() => providers.id, { onDelete: "restrict" }),
     externalId: text().notNull(), // provider's store id
+    /** Store account that manages this restaurant (profiles.role = 'restaurant'). null = none. */
+    ownerId: uuid().references(() => authUsers.id, { onDelete: "set null" }),
     name: text().notNull(),
     description: text(),
     address: text(),
@@ -381,6 +392,7 @@ export const restaurants = pgTable(
   },
   (t) => [
     unique("restaurants_provider_external_uq").on(t.providerId, t.externalId),
+    index("restaurants_owner_idx").on(t.ownerId),
     signedInRead("restaurants"),
   ],
 );

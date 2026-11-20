@@ -277,14 +277,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "activity_level": Database["public"]['Enums']["activity_level"] | null,"age": number | null,"created_at": string,"default_lat": number | null,"default_lng": number | null,"default_location_label": string | null,"display_name": string | null,"height_cm": number | null,"id": string,"sex": Database["public"]['Enums']["sex"] | null,"timezone": string,"unit_prefs": NonNullable<Json>,"updated_at": string,"weight_kg": number | null
+                    "activity_level": Database["public"]['Enums']["activity_level"] | null,"age": number | null,"created_at": string,"default_lat": number | null,"default_lng": number | null,"default_location_label": string | null,"display_name": string | null,"height_cm": number | null,"id": string,"role": Database["public"]['Enums']["account_role"],"sex": Database["public"]['Enums']["sex"] | null,"timezone": string,"unit_prefs": NonNullable<Json>,"updated_at": string,"weight_kg": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "activity_level"?: Database["public"]['Enums']["activity_level"] | null,"age"?: number | null,"created_at"?: string,"default_lat"?: number | null,"default_lng"?: number | null,"default_location_label"?: string | null,"display_name"?: string | null,"height_cm"?: number | null,"id": string,"sex"?: Database["public"]['Enums']["sex"] | null,"timezone"?: string,"unit_prefs"?: NonNullable<Json>,"updated_at"?: string,"weight_kg"?: number | null
+                    "activity_level"?: Database["public"]['Enums']["activity_level"] | null,"age"?: number | null,"created_at"?: string,"default_lat"?: number | null,"default_lng"?: number | null,"default_location_label"?: string | null,"display_name"?: string | null,"height_cm"?: number | null,"id": string,"role"?: Database["public"]['Enums']["account_role"],"sex"?: Database["public"]['Enums']["sex"] | null,"timezone"?: string,"unit_prefs"?: NonNullable<Json>,"updated_at"?: string,"weight_kg"?: number | null
                   }
                   Update: {
-                    "activity_level"?: Database["public"]['Enums']["activity_level"] | null,"age"?: number | null,"created_at"?: string,"default_lat"?: number | null,"default_lng"?: number | null,"default_location_label"?: string | null,"display_name"?: string | null,"height_cm"?: number | null,"id"?: string,"sex"?: Database["public"]['Enums']["sex"] | null,"timezone"?: string,"unit_prefs"?: NonNullable<Json>,"updated_at"?: string,"weight_kg"?: number | null
+                    "activity_level"?: Database["public"]['Enums']["activity_level"] | null,"age"?: number | null,"created_at"?: string,"default_lat"?: number | null,"default_lng"?: number | null,"default_location_label"?: string | null,"display_name"?: string | null,"height_cm"?: number | null,"id"?: string,"role"?: Database["public"]['Enums']["account_role"],"sex"?: Database["public"]['Enums']["sex"] | null,"timezone"?: string,"unit_prefs"?: NonNullable<Json>,"updated_at"?: string,"weight_kg"?: number | null
                   }
                   Relationships: [
                     
@@ -305,14 +305,14 @@ isOneToOne: false
                   ]
                 },"restaurants": {
                   Row: {
-                    "accepting_orders": boolean,"address": string | null,"campus_area": string | null,"created_at": string,"description": string | null,"external_id": string,"geo": unknown,"id": string,"image_url": string | null,"is_active": boolean,"last_synced_at": string | null,"lat": number | null,"lng": number | null,"name": string,"opening_hours": Json | null,"provider_id": string,"updated_at": string
+                    "accepting_orders": boolean,"address": string | null,"campus_area": string | null,"created_at": string,"description": string | null,"external_id": string,"geo": unknown,"id": string,"image_url": string | null,"is_active": boolean,"last_synced_at": string | null,"lat": number | null,"lng": number | null,"name": string,"opening_hours": Json | null,"owner_id": string | null,"provider_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "accepting_orders"?: boolean,"address"?: string | null,"campus_area"?: string | null,"created_at"?: string,"description"?: string | null,"external_id": string,"geo"?: never,"id"?: string,"image_url"?: string | null,"is_active"?: boolean,"last_synced_at"?: string | null,"lat"?: number | null,"lng"?: number | null,"name": string,"opening_hours"?: Json | null,"provider_id": string,"updated_at"?: string
+                    "accepting_orders"?: boolean,"address"?: string | null,"campus_area"?: string | null,"created_at"?: string,"description"?: string | null,"external_id": string,"geo"?: never,"id"?: string,"image_url"?: string | null,"is_active"?: boolean,"last_synced_at"?: string | null,"lat"?: number | null,"lng"?: number | null,"name": string,"opening_hours"?: Json | null,"owner_id"?: string | null,"provider_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "accepting_orders"?: boolean,"address"?: string | null,"campus_area"?: string | null,"created_at"?: string,"description"?: string | null,"external_id"?: string,"geo"?: never,"id"?: string,"image_url"?: string | null,"is_active"?: boolean,"last_synced_at"?: string | null,"lat"?: number | null,"lng"?: number | null,"name"?: string,"opening_hours"?: Json | null,"provider_id"?: string,"updated_at"?: string
+                    "accepting_orders"?: boolean,"address"?: string | null,"campus_area"?: string | null,"created_at"?: string,"description"?: string | null,"external_id"?: string,"geo"?: never,"id"?: string,"image_url"?: string | null,"is_active"?: boolean,"last_synced_at"?: string | null,"lat"?: number | null,"lng"?: number | null,"name"?: string,"opening_hours"?: Json | null,"owner_id"?: string | null,"provider_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -343,10 +343,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "admin_create_account":
+{ Args: { "p_display_name"?: string,"p_email": string,"p_password": string,"p_restaurant_id"?: string,"p_role": Database["public"]['Enums']["account_role"] }; Returns: string
+                           }
           }
           Enums: {
-            "activity_level": "sedentary"|"light"|"moderate"|"active"|"very_active","component_type": "rice"|"meat"|"sauce"|"dessert"|"tofu"|"topping"|"egg"|"bread"|"other","delivery_status": "pending"|"preparing"|"ready_for_pickup"|"in_transit"|"delivered"|"cancelled"|"failed","fulfillment_type": "delivery"|"pickup","goal_mode": "deficit"|"maintenance"|"surplus","meal_log_source": "manual"|"menu"|"order","meal_type": "breakfast"|"lunch"|"dinner"|"snack","nutrition_source": "provider"|"calculated"|"estimated"|"user"|"unavailable","order_status": "pending"|"submitted"|"confirmed"|"failed"|"cancelled"|"completed","payment_status": "pending"|"authorized"|"paid"|"failed"|"cancelled"|"refunded","provider_kind": "restaurant"|"delivery"|"aggregator","sex": "male"|"female","target_source": "calculated"|"custom"
+            "account_role": "customer"|"restaurant","activity_level": "sedentary"|"light"|"moderate"|"active"|"very_active","component_type": "rice"|"meat"|"sauce"|"dessert"|"tofu"|"topping"|"egg"|"bread"|"other","delivery_status": "pending"|"preparing"|"ready_for_pickup"|"in_transit"|"delivered"|"cancelled"|"failed","fulfillment_type": "delivery"|"pickup","goal_mode": "deficit"|"maintenance"|"surplus","meal_log_source": "manual"|"menu"|"order","meal_type": "breakfast"|"lunch"|"dinner"|"snack","nutrition_source": "provider"|"calculated"|"estimated"|"user"|"unavailable","order_status": "pending"|"submitted"|"confirmed"|"failed"|"cancelled"|"completed","payment_status": "pending"|"authorized"|"paid"|"failed"|"cancelled"|"refunded","provider_kind": "restaurant"|"delivery"|"aggregator","sex": "male"|"female","target_source": "calculated"|"custom"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -466,7 +468,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "activity_level": ["sedentary", "light", "moderate", "active", "very_active"],"component_type": ["rice", "meat", "sauce", "dessert", "tofu", "topping", "egg", "bread", "other"],"delivery_status": ["pending", "preparing", "ready_for_pickup", "in_transit", "delivered", "cancelled", "failed"],"fulfillment_type": ["delivery", "pickup"],"goal_mode": ["deficit", "maintenance", "surplus"],"meal_log_source": ["manual", "menu", "order"],"meal_type": ["breakfast", "lunch", "dinner", "snack"],"nutrition_source": ["provider", "calculated", "estimated", "user", "unavailable"],"order_status": ["pending", "submitted", "confirmed", "failed", "cancelled", "completed"],"payment_status": ["pending", "authorized", "paid", "failed", "cancelled", "refunded"],"provider_kind": ["restaurant", "delivery", "aggregator"],"sex": ["male", "female"],"target_source": ["calculated", "custom"]
+            "account_role": ["customer", "restaurant"],"activity_level": ["sedentary", "light", "moderate", "active", "very_active"],"component_type": ["rice", "meat", "sauce", "dessert", "tofu", "topping", "egg", "bread", "other"],"delivery_status": ["pending", "preparing", "ready_for_pickup", "in_transit", "delivered", "cancelled", "failed"],"fulfillment_type": ["delivery", "pickup"],"goal_mode": ["deficit", "maintenance", "surplus"],"meal_log_source": ["manual", "menu", "order"],"meal_type": ["breakfast", "lunch", "dinner", "snack"],"nutrition_source": ["provider", "calculated", "estimated", "user", "unavailable"],"order_status": ["pending", "submitted", "confirmed", "failed", "cancelled", "completed"],"payment_status": ["pending", "authorized", "paid", "failed", "cancelled", "refunded"],"provider_kind": ["restaurant", "delivery", "aggregator"],"sex": ["male", "female"],"target_source": ["calculated", "custom"]
           }
         }
 } as const
