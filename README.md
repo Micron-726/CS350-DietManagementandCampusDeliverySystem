@@ -15,7 +15,8 @@ cp .env.example .env.local  # fill in the publishable key and the DB password (a
 npm run dev                 # http://localhost:3000
 ```
 
-Sign up on `/login` with any email and password.
+Log in on `/login` (student or store). Students sign up on `/signup` with an `@kaist.ac.kr`
+email. See [Accounts](#accounts) for the demo accounts and the helpers to get the current user.
 
 ### Local stack (for schema changes)
 
@@ -114,6 +115,132 @@ user can see, use the app or supabase-js.
   `supabase/migrations/*_grants.sql`. Without it you get `permission denied for table ...`.
 - If `db:generate` asks whether a column was renamed or replaced, answer in the terminal; it
   needs an interactive shell.
+
+## Accounts
+
+Two account types, stored in `profiles.role`:
+
+| Role | Who | How the account is made | First page |
+|---|---|---|---|
+| `customer` | KAIST student | Self sign-up on `/signup`, `@kaist.ac.kr` only. KAIST verification is fake: the "인증" button always succeeds and no mail is sent | `/` |
+| `restaurant` | Campus store | No sign-up. The store mails a request (`/signup/store`), an admin creates the account (below) | `/store` |
+
+### Demo accounts (local stack)
+
+Created by `supabase/seed.sql` on every `npm run db:reset`:
+
+| Email | Password | Role |
+|---|---|---|
+| `student@kaist.ac.kr` | `student` | customer |
+| `store@gmail.com` | `store` | restaurant, owns **W2 Bowl House** (`restaurants.owner_id`) |
+
+For your own test accounts, sign up with any `<name>@kaist.ac.kr` address. Other domains are
+rejected, by the app and by the database.
+
+### Getting the current user (server code)
+
+Use `@/lib/auth` instead of reading the Supabase session yourself. Server-only.
+
+```ts
+import { getCurrentAccount, requireAccount } from "@/lib/auth";
+
+// exported as `Account`
+type Account = {
+  id: string;                         // auth.users.id = profiles.id
+  email: string;
+  displayName: string | null;
+  role: "customer" | "restaurant";
+  restaurantId: string | null;        // restaurant owned by a store account, else null
+};
+
+await getCurrentAccount();            // Account | null (signed out)
+await requireAccount();               // any signed-in account; signed out → redirect /login
+await requireAccount("customer");     // student only; a store account → redirect /store
+await requireAccount("restaurant");   // store only;   a student      → redirect /
+```
+
+Both are cached per request (React `cache`), so calling them in several components costs one
+DB lookup.
+
+**In a page.** Session reads must sit inside `<Suspense>`, after `await connection()`:
+
+```tsx
+import { Suspense } from "react";
+import { connection } from "next/server";
+import { requireAccount } from "@/lib/auth";
+
+export default function Page() {
+  return (
+    <Suspense fallback={<p>불러오는 중…</p>}>
+      <Content />
+    </Suspense>
+  );
+}
+
+async function Content() {
+  await connection();
+  const account = await requireAccount("customer");
+  return <p>{account.email}</p>;
+}
+```
+
+**In a Server Action.** Check again inside every action. A check in the page does not protect
+the action, because actions can be called directly.
+
+```ts
+"use server";
+import { requireAccount } from "@/lib/auth";
+
+export async function updateMenu(formData: FormData) {
+  const store = await requireAccount("restaurant");
+  if (!store.restaurantId) throw new Error("No restaurant linked to this account");
+  // Only touch rows where restaurant_id = store.restaurantId
+}
+```
+
+- Store pages live under `/store/*` and start with `requireAccount("restaurant")`. Scope every
+  store query to `account.restaurantId`.
+- Personal data (profiles, goals, logs) is still read with supabase-js, where RLS limits rows to
+  the signed-in user. `account.id` is the same id as `auth.uid()`.
+
+### Rules to keep
+
+- **Users can't change their own `role`.** `authenticated` has UPDATE on a fixed list of
+  `profiles` columns (`*_account.sql` migration). **If you add a user-editable column to
+  `profiles`, grant UPDATE on it in a new custom migration**, or supabase-js gets
+  `permission denied for table profiles`.
+- A customer's email must stay `@kaist.ac.kr` (`on_auth_user_created` and
+  `on_auth_user_email_change` triggers).
+- Keep `restaurants.owner_id` when you change `restaurants`.
+
+### Creating a store account (admin)
+
+In the SQL editor (Supabase Studio or `psql`):
+
+```sql
+select public.admin_create_account(
+  'store@example.com',   -- login email (any domain)
+  'password',            -- 6+ characters for real accounts
+  'restaurant',
+  'Store name',          -- display name
+  '<restaurants.id>'     -- restaurant to link, or null
+);
+```
+
+The function is not callable from supabase-js, so clients can't create store accounts.
+
+### Account pages
+
+| Path | What |
+|---|---|
+| `/login` | Choose student / store, then `/login/student` or `/login/store` |
+| `/signup` | Student sign-up |
+| `/signup/store` | How a store requests an account |
+| `/account` | Account info, log out, delete account (deletes all personal data) |
+| `/store` | Store home (placeholder for part D) |
+
+`/login*`, `/signup*` and `/auth*` are open to signed-out users; everything else redirects to
+`/login` (`src/lib/supabase/proxy.ts`).
 
 ## Data access
 
