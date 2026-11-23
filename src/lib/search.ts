@@ -100,6 +100,7 @@ export async function searchMeals(criteria: SearchCriteria, location?: UserLocat
     ? criteria
     : { ...criteria, maxDistanceM: undefined };
 
-  const ranked = rankWithWidening(candidates, effective, { limit: 20 });
+  // stop widening once 3 meals fit every limit
+  const ranked = rankWithWidening(candidates, effective, { limit: 20, minResults: 3 });
   return { ...ranked, restaurantInfo };
 }
