@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { mealTypeLabels } from "@/lib/diet/labels";
 import { timeInKorea } from "@/lib/diet/meals";
+import type { OrderLine } from "@/lib/diet/order-log";
 import type { MealRow } from "@/lib/diet/rows";
 import { deleteMeal, type DeleteState } from "./actions";
 import { MealForm } from "./meal-form";
 
 const text = (value: number | null) => (value === null ? "" : String(value));
 
-export function MealItem({ meal, today }: { meal: MealRow; today: string }) {
+export function MealItem({ meal, today, orderLines }: { meal: MealRow; today: string; orderLines?: OrderLine[] }) {
   const [editing, setEditing] = useState(false);
   const closeEditor = useCallback(() => setEditing(false), []);
   const [confirming, setConfirming] = useState(false);
@@ -37,10 +38,12 @@ export function MealItem({ meal, today }: { meal: MealRow; today: string }) {
                 {meal.meal_type && <Badge variant="secondary">{mealTypeLabels[meal.meal_type]}</Badge>}
                 {meal.source === "order" && <Badge variant="outline">주문</Badge>}
               </p>
-              <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-                <span>칼로리 <NutritionValue value={meal.kcal} unit="kcal" source={meal.kcal_source} /></span>
-                <span>단백질 <NutritionValue value={meal.protein_g} unit="g" source={meal.protein_source} /></span>
-              </p>
+              {orderLines?.length ? <OrderBreakdown lines={orderLines} meal={meal} /> : (
+                <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                  <span>칼로리 <NutritionValue value={meal.kcal} unit="kcal" source={meal.kcal_source} /></span>
+                  <span>단백질 <NutritionValue value={meal.protein_g} unit="g" source={meal.protein_source} /></span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -66,5 +69,32 @@ export function MealItem({ meal, today }: { meal: MealRow; today: string }) {
         </CardContent>
       </Card>
     </li>
+  );
+}
+
+/** FR-15 entry: ordered menus with per-unit values × quantity, then the entry's total (decision 2). */
+function OrderBreakdown({ lines, meal }: { lines: OrderLine[]; meal: MealRow }) {
+  const edited = meal.kcal_source === "user" || meal.protein_source === "user";
+  return (
+    <div className="flex flex-col gap-1.5 text-sm">
+      <ul className="flex flex-col gap-1 border-l-2 pl-3">
+        {lines.map((line) => (
+          <li key={line.id} className="flex flex-wrap items-baseline justify-between gap-x-3">
+            <span>{line.name}</span>
+            <span className="flex flex-wrap gap-x-3 text-muted-foreground">
+              <NutritionValue value={line.kcal} unit="kcal" source={line.kcalSource} />
+              <NutritionValue value={line.proteinG} unit="g" source={line.proteinSource} />
+              <span className="tabular-nums">× {line.quantity}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-1.5 font-medium">
+        <span>합계</span>
+        <span>칼로리 <NutritionValue value={meal.kcal} unit="kcal" source={meal.kcal_source} /></span>
+        <span>단백질 <NutritionValue value={meal.protein_g} unit="g" source={meal.protein_source} /></span>
+        {edited && <Badge variant="outline">직접 수정함</Badge>}
+      </p>
+    </div>
   );
 }

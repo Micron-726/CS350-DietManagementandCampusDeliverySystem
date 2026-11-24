@@ -23,6 +23,7 @@ function parse(form: FormData) {
 function revalidateDiary() {
   revalidatePath("/diary");
   revalidatePath("/");
+  revalidatePath("/orders"); // an order's "식사 기록에 추가" state depends on its entry
 }
 
 const invalid = (fieldErrors: FieldErrors<MealField>): MealState => ({ savedAt: null, error: "입력한 값을 확인해 주세요.", fieldErrors });

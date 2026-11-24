@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { type OrderLine, representativeItemId, summarizeOrder, sumNutrient } from "./order-log";
+import { type OrderLine, orderLogEntry, representativeItemId, summarizeOrder, sumNutrient } from "./order-log";
 
 function line(overrides: Partial<OrderLine> & Pick<OrderLine, "id">): OrderLine {
   return {
@@ -76,5 +76,36 @@ describe("sumNutrient follows the team's menu merge rule", () => {
 
   test("an empty order has no total", () => {
     assert.deepEqual(sumNutrient([], kcal), { value: null, source: "unavailable", missing: 0 });
+  });
+});
+
+describe("orderLogEntry", () => {
+  const confirmedAt = new Date("2026-11-25T03:30:00Z"); // 12:30 in Korea
+  const order = { restaurantName: "W2 Bowl House", status: "confirmed", confirmedAt, createdAt: new Date("2026-11-25T03:20:00Z"), items: [chicken, lessRice, cola] };
+
+  test("one entry per order: restaurant name, confirmation time, order totals, representative item", () => {
+    const result = orderLogEntry(order);
+    assert.ok(result.ok);
+    assert.equal(result.value.name, "W2 Bowl House 주문");
+    assert.equal(result.value.eatenAt, confirmedAt);
+    assert.equal(result.value.linkItemId, cola.id);
+    assert.deepEqual(result.value.kcal, { value: 1980, source: "provider", missing: 0 });
+    assert.deepEqual(result.value.protein, { value: 94, source: "provider", missing: 0 });
+  });
+
+  test("completed orders can be logged too; without a confirmation time the order time is used", () => {
+    const result = orderLogEntry({ ...order, status: "completed", confirmedAt: null });
+    assert.ok(result.ok);
+    assert.equal(result.value.eatenAt, order.createdAt);
+  });
+
+  test("orders the provider did not confirm can't be logged", () => {
+    for (const status of ["pending", "submitted", "failed", "cancelled"]) {
+      assert.deepEqual(orderLogEntry({ ...order, status }), { ok: false, reason: "not_confirmed" });
+    }
+  });
+
+  test("an order without items can't be logged", () => {
+    assert.deepEqual(orderLogEntry({ ...order, items: [] }), { ok: false, reason: "no_items" });
   });
 });

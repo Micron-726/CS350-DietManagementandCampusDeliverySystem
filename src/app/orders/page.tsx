@@ -3,11 +3,14 @@ import { ClipboardList } from "lucide-react";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ButtonLink } from "@/components/button-link";
+import { AddOrderToLog } from "@/components/diet/add-order-to-log";
 import { OrderCard } from "@/components/order-card";
 import { ContentEmpty, PageHeading, PageLoading, PageMain } from "@/components/page-ui";
 import { orders } from "@/db/schema";
 import { requireAccount } from "@/lib/auth";
 import { loadOrders } from "@/lib/order-data";
+import { dietClient } from "@/lib/diet/data";
+import { orderLogDates } from "@/lib/diet/order-data";
 
 export default function Page() {
   return (
@@ -22,11 +25,17 @@ async function CustomerOrders() {
   await connection();
   const account = await requireAccount("customer");
   const history = await loadOrders(eq(orders.userId, account.id));
+  // Part B (FR-15): confirmed/completed orders can be added to the food log.
+  const logDates = await orderLogDates(await dietClient(), account.id, history);
 
   return history.length ? (
     <section aria-labelledby="order-history" className="flex flex-col gap-4">
       <h2 id="order-history" className="sr-only">주문 내역</h2>
-      {history.map((order) => <OrderCard key={order.id} order={order} />)}
+      {history.map((order) => (
+        <OrderCard key={order.id} order={order}>
+          {logDates.has(order.id) && <AddOrderToLog orderId={order.id} loggedDate={logDates.get(order.id) ?? null} />}
+        </OrderCard>
+      ))}
     </section>
   ) : (
     <ContentEmpty icon={ClipboardList} title="주문 내역이 없습니다.">

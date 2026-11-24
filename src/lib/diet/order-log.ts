@@ -76,3 +76,47 @@ export function summarizeOrder(lines: readonly OrderLine[]): OrderLogSummary | n
     protein: sumNutrient(lines, (line) => ({ value: line.proteinG, source: line.proteinSource })),
   };
 }
+
+/* ───────────── order → food-log entry (FR-15) ───────────── */
+
+/** FR-15/FR-34: only an order the provider confirmed (or that was then completed) can be logged. */
+export const LOGGABLE_ORDER_STATUSES = ["confirmed", "completed"] as const;
+export function isLoggableStatus(status: string): boolean {
+  return (LOGGABLE_ORDER_STATUSES as readonly string[]).includes(status);
+}
+
+export type OrderForLog = {
+  restaurantName: string;
+  status: string;
+  confirmedAt: Date | null;
+  createdAt: Date;
+  items: readonly OrderLine[];
+};
+
+export type OrderLogEntry = {
+  name: string;
+  /** When the provider confirmed the order (decision 3); falls back to the order time. */
+  eatenAt: Date;
+  linkItemId: string;
+  kcal: NutrientTotal;
+  protein: NutrientTotal;
+};
+
+/** Values for the single food-log entry of an order, or why it can't be logged. */
+export function orderLogEntry(order: OrderForLog):
+  | { ok: true; value: OrderLogEntry }
+  | { ok: false; reason: "not_confirmed" | "no_items" } {
+  if (!isLoggableStatus(order.status)) return { ok: false, reason: "not_confirmed" };
+  const summary = summarizeOrder(order.items);
+  if (!summary) return { ok: false, reason: "no_items" };
+  return {
+    ok: true,
+    value: {
+      name: `${order.restaurantName} 주문`,
+      eatenAt: order.confirmedAt ?? order.createdAt,
+      linkItemId: summary.linkItemId,
+      kcal: summary.kcal,
+      protein: summary.protein,
+    },
+  };
+}

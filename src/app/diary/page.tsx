@@ -9,6 +9,7 @@ import { DayDashboard } from "@/components/diet/day-dashboard";
 import { dietClient, loadFirstGoalDate, loadGoalOn, loadMealsOn } from "@/lib/diet/data";
 import { dayLabel } from "@/lib/diet/labels";
 import { dayTotals, resolveDiaryDate, timeInKorea } from "@/lib/diet/meals";
+import { orderLinesByLink } from "@/lib/diet/order-data";
 import { DateNav } from "./date-nav";
 import { MealForm } from "./meal-form";
 import { MealItem } from "./meal-item";
@@ -34,6 +35,10 @@ async function Diary({ searchParams }: Pick<PageProps<"/diary">, "searchParams">
     loadFirstGoalDate(supabase, account.id),
   ]);
   const error = mealsError || goal.error || firstGoal.error;
+  // FR-15: entries added from an order show the ordered menus (snapshot) under them.
+  const orderLines = meals && !error
+    ? await orderLinesByLink(account.id, meals.flatMap((meal) => meal.source === "order" && meal.order_item_id ? [meal.order_item_id] : []))
+    : {};
 
   return (
     // Keyed by date so forms start fresh on every day.
@@ -47,7 +52,9 @@ async function Diary({ searchParams }: Pick<PageProps<"/diary">, "searchParams">
             <h2 id="meal-list" className="text-xl font-bold tracking-tight">기록한 식사</h2>
             {meals.length ? (
               <ul className="flex flex-col gap-3">
-                {meals.map((meal) => <MealItem key={meal.id} meal={meal} today={today} />)}
+                {meals.map((meal) => (
+                  <MealItem key={meal.id} meal={meal} today={today} orderLines={meal.order_item_id ? orderLines[meal.order_item_id] : undefined} />
+                ))}
               </ul>
             ) : <ContentEmpty icon={BookOpen} title={`${dayLabel(date)}에 기록한 식사가 없습니다.`} />}
           </section>
