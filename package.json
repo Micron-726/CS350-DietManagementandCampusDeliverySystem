@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "cafeteria:account": "tsx scripts/kaist/create-account.ts",
     "cafeteria:sync": "tsx scripts/kaist/sync.ts",
-    "cafeteria:test": "tsx --test scripts/kaist/cafeteria.test.ts"
+    "cafeteria:test": "tsx --test scripts/kaist/cafeteria.test.ts",
+    "diet:test": "tsx --test \"src/lib/diet/**/*.test.ts\""
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
