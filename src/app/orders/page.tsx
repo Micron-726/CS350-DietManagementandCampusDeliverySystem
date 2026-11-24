@@ -1,18 +1,20 @@
 import { eq } from "drizzle-orm";
-import Link from "next/link";
+import { ClipboardList } from "lucide-react";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { BagLink } from "@/components/bag-link";
+import { ButtonLink } from "@/components/button-link";
 import { OrderCard } from "@/components/order-card";
+import { ContentEmpty, PageHeading, PageLoading, PageMain } from "@/components/page-ui";
 import { orders } from "@/db/schema";
 import { requireAccount } from "@/lib/auth";
 import { loadOrders } from "@/lib/order-data";
 
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <Suspense fallback={<p>불러오는 중…</p>}><CustomerOrders /></Suspense>
-    </main>
+    <PageMain className="max-w-4xl">
+      <PageHeading title="내 주문" description="주문, 결제, 배달 상태를 확인하세요." />
+      <Suspense fallback={<PageLoading />}><CustomerOrders /></Suspense>
+    </PageMain>
   );
 }
 
@@ -20,16 +22,15 @@ async function CustomerOrders() {
   await connection();
   const account = await requireAccount("customer");
   const history = await loadOrders(eq(orders.userId, account.id));
-  return (
-    <>
-      <nav aria-label="주문" className="flex gap-5 text-sm">
-        <Link href="/restaurants" className="underline underline-offset-4">식당 목록</Link>
-        <BagLink customerId={account.id} />
-      </nav>
-      <h1 className="my-5 text-3xl font-bold">내 주문</h1>
-      {history.length === 0 ? <p>주문 내역이 없습니다.</p> : (
-        <div className="space-y-4">{history.map((order) => <OrderCard key={order.id} order={order} />)}</div>
-      )}
-    </>
+
+  return history.length ? (
+    <section aria-labelledby="order-history" className="flex flex-col gap-4">
+      <h2 id="order-history" className="sr-only">주문 내역</h2>
+      {history.map((order) => <OrderCard key={order.id} order={order} />)}
+    </section>
+  ) : (
+    <ContentEmpty icon={ClipboardList} title="주문 내역이 없습니다.">
+      <ButtonLink href="/restaurants">교내 식당 보기</ButtonLink>
+    </ContentEmpty>
   );
 }

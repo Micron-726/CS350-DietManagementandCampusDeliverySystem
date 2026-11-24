@@ -1,8 +1,10 @@
-import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { BagLink } from "@/components/bag-link";
+import { ButtonLink } from "@/components/button-link";
+import { BackLink, PageHeading, PageLoading, PageMain } from "@/components/page-ui";
+import { Badge } from "@/components/ui/badge";
 import { db } from "@/db";
 import { requireAccount } from "@/lib/auth";
 import { isUuid } from "@/lib/menu";
@@ -14,9 +16,9 @@ type Props = Pick<PageProps<"/restaurants/[restaurantId]/[itemId]">, "params">;
 
 export default function Page({ params }: Props) {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-      <Suspense fallback={<p>불러오는 중…</p>}><MenuDetails params={params} /></Suspense>
-    </main>
+    <PageMain className="max-w-5xl">
+      <Suspense fallback={<PageLoading />}><MenuDetails params={params} /></Suspense>
+    </PageMain>
   );
 }
 
@@ -34,15 +36,23 @@ async function MenuDetails({ params }: Props) {
     ? account.id : null;
   return (
     <>
-      <nav aria-label="메뉴" className="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <Link href={`/restaurants/${restaurantId}`} className="underline underline-offset-4">{restaurant.name} 메뉴</Link>
-        <BagLink customerId={account.id} />
-      </nav>
-      <h1 className="mb-2 mt-5 text-3xl font-bold">{item.name}</h1>
-      {(item.category || item.serviceDate) && <p className="text-sm text-neutral-500">{[item.category, item.serviceDate].filter(Boolean).join(" · ")}</p>}
-      {item.description && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{item.description}</p>}
-      {item.sourceUrl && <a className="mt-3 inline-block text-sm underline underline-offset-4" href={item.sourceUrl}>KAIST 공식 식단</a>}
-      <div className="mt-6"><MenuOptions key={`${item.id}:${item.updatedAt.getTime()}`} item={item} bagCustomerId={bagCustomerId} /></div>
+      <BackLink href={`/restaurants/${restaurantId}`}>{restaurant.name} 메뉴</BackLink>
+      <div className="flex flex-col gap-3">
+        <PageHeading title={item.name} />
+        {(item.category || item.serviceDate) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {item.category && <Badge variant="secondary">{item.category}</Badge>}
+            {item.serviceDate && <time className="text-sm text-muted-foreground" dateTime={item.serviceDate}>{item.serviceDate}</time>}
+          </div>
+        )}
+        {item.description && <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{item.description}</p>}
+        {item.sourceUrl && (
+          <ButtonLink href={item.sourceUrl} size="sm" variant="outline" className="self-start">
+            KAIST 공식 식단<ExternalLink data-icon="inline-end" />
+          </ButtonLink>
+        )}
+      </div>
+      <MenuOptions key={`${item.id}:${item.updatedAt.getTime()}`} item={item} bagCustomerId={bagCustomerId} />
     </>
   );
 }

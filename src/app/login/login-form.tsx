@@ -1,50 +1,26 @@
 "use client";
 
 import { useActionState } from "react";
+import { InputField } from "@/components/form-fields";
+import { ErrorMessage } from "@/components/page-ui";
+import { Button } from "@/components/ui/button";
+import { FieldGroup } from "@/components/ui/field";
 import { login, type LoginState } from "./actions";
 
 const initialState: LoginState = { error: null, email: "" };
 
 export function LoginForm({ accountType }: { accountType: "customer" | "restaurant" }) {
   const [state, formAction, pending] = useActionState(login, initialState);
-  const isStudent = accountType === "customer";
-
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form action={formAction}>
       <input type="hidden" name="accountType" value={accountType} />
-      <label className="flex flex-col gap-1 text-sm">
-        이메일
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="username"
-          defaultValue={state.email}
-          placeholder={isStudent ? "아이디@kaist.ac.kr" : "가게 계정 이메일"}
-          className="rounded border p-2 text-base"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        비밀번호
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="rounded border p-2 text-base"
-        />
-      </label>
-      {state.error && (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      )}
-      <button
-        disabled={pending}
-        className="rounded bg-black p-2 text-white disabled:opacity-50 dark:bg-white dark:text-black"
-      >
-        {pending ? "로그인 중…" : "로그인"}
-      </button>
+      <FieldGroup>
+        <InputField label="이메일" name="email" type="email" required autoComplete="username" defaultValue={state.email}
+          placeholder={accountType === "customer" ? "아이디@kaist.ac.kr" : "가게 계정 이메일"} />
+        <InputField label="비밀번호" name="password" type="password" required autoComplete="current-password" />
+        {state.error && <ErrorMessage>{state.error}</ErrorMessage>}
+        <Button type="submit" size="lg" disabled={pending}>{pending ? "로그인 중…" : "로그인"}</Button>
+      </FieldGroup>
     </form>
   );
 }

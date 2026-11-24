@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ButtonLink } from "@/components/button-link";
 import type { Account } from "@/lib/auth";
 
 export function storePath(path: string, restaurantId: string) {
@@ -12,11 +12,12 @@ export function RestaurantLinks({ account, selectedId, path }: {
 }) {
   if (account.restaurants.length < 2) return null;
   return (
-    <nav aria-label="식당 선택" className="mb-6 flex flex-wrap gap-2">
+    <nav aria-label="식당 선택" className="flex flex-wrap gap-2">
       {account.restaurants.map((restaurant) => (
-        <Link key={restaurant.id} href={storePath(path, restaurant.id)} aria-current={selectedId === restaurant.id ? "page" : undefined}
-          className="rounded-lg border border-neutral-200 px-3 py-2 text-sm aria-[current=page]:border-emerald-600 aria-[current=page]:font-semibold dark:border-neutral-700"
-        >{restaurant.name}</Link>
+        <ButtonLink href={storePath(path, restaurant.id)} key={restaurant.id}
+ variant={selectedId === restaurant.id ? "secondary" : "outline"} aria-current={selectedId === restaurant.id ? "page" : undefined}>
+          {restaurant.name}
+        </ButtonLink>
       ))}
     </nav>
   );

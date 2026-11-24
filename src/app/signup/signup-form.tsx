@@ -1,8 +1,14 @@
 "use client";
 
+import { CircleCheck } from "lucide-react";
 import { useActionState, useState } from "react";
-import { signup, type SignupState } from "./actions";
+import { InputField } from "@/components/form-fields";
+import { ErrorMessage } from "@/components/page-ui";
+import { Button } from "@/components/ui/button";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { MIN_PASSWORD_LENGTH, isKaistEmail, normalizeEmail } from "@/lib/account-validation";
+import { signup, type SignupState } from "./actions";
 
 const initialState: SignupState = { error: null, email: "" };
 
@@ -13,91 +19,43 @@ export function SignupForm() {
   const [email, setEmail] = useState(state.email);
   const [verification, setVerification] = useState<Verification>({ status: "idle" });
 
-  // Fake KAIST verification: no mail is sent and every @kaist.ac.kr address counts as verified.
-  // Sign-up doesn't wait for this button; the server checks the domain either way.
+  // Simulate KAIST email verification. The server still checks the domain on signup.
   function verify() {
     const normalized = normalizeEmail(email);
     setVerification(isKaistEmail(normalized) ? { status: "sent", email: normalized } : { status: "invalid" });
   }
 
   const verified = verification.status === "sent" && verification.email === normalizeEmail(email);
+  const invalid = verification.status === "invalid";
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1 text-sm">
-        <label htmlFor="signup-email">KAIST 이메일</label>
-        <div className="flex gap-2">
-          <input
-            id="signup-email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="아이디@kaist.ac.kr"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="min-w-0 flex-1 rounded border p-2 text-base"
-          />
-          <button
-            type="button"
-            onClick={verify}
-            aria-pressed={verified}
-            className={
-              verified
-                ? "shrink-0 rounded border border-green-600 bg-green-600 px-3 text-sm text-white"
-                : "shrink-0 rounded border px-3 text-sm"
-            }
-          >
-            {verified ? "✓ 인증 완료" : "인증"}
-          </button>
-        </div>
-      </div>
-      {verified && (
-        <p role="status" className="text-sm text-green-700 dark:text-green-400">
-          인증되었습니다.
-        </p>
-      )}
-      {verification.status === "invalid" && (
-        <p role="alert" className="text-sm text-red-600">
-          @kaist.ac.kr 이메일만 인증할 수 있습니다.
-        </p>
-      )}
-
-      <label className="flex flex-col gap-1 text-sm">
-        비밀번호
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={MIN_PASSWORD_LENGTH}
-          autoComplete="new-password"
-          placeholder={`${MIN_PASSWORD_LENGTH}자 이상`}
-          className="rounded border p-2 text-base"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        비밀번호 확인
-        <input
-          name="passwordConfirm"
-          type="password"
-          required
-          minLength={MIN_PASSWORD_LENGTH}
-          autoComplete="new-password"
-          className="rounded border p-2 text-base"
-        />
-      </label>
-
-      {state.error && (
-        <p role="alert" className="text-sm text-red-600">
-          {state.error}
-        </p>
-      )}
-      <button
-        disabled={pending}
-        className="rounded bg-black p-2 text-white disabled:opacity-50 dark:bg-white dark:text-black"
-      >
-        {pending ? "가입 중…" : "회원가입"}
-      </button>
+    <form action={formAction}>
+      <FieldGroup>
+        <Field data-invalid={invalid || undefined}>
+          <FieldLabel htmlFor="signup-email">KAIST 이메일</FieldLabel>
+          <InputGroup>
+            <InputGroupInput id="signup-email" name="email" type="email" required autoComplete="email"
+              placeholder="아이디@kaist.ac.kr" value={email} aria-invalid={invalid || undefined}
+              aria-describedby={invalid ? "email-error" : undefined}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (invalid) setVerification({ status: "idle" });
+              }} />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton type="button" onClick={verify} aria-pressed={verified} variant={verified ? "secondary" : "outline"}>
+                {verified ? "인증 완료" : "인증"}
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+          {verified && <p role="status" className="flex items-center gap-1.5 text-sm text-primary"><CircleCheck className="size-4" />인증되었습니다.</p>}
+          {invalid && <FieldError id="email-error">@kaist.ac.kr 이메일만 인증할 수 있습니다.</FieldError>}
+        </Field>
+        <InputField label="비밀번호" name="password" type="password" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password"
+          placeholder={`${MIN_PASSWORD_LENGTH}자 이상`} />
+        <InputField label="비밀번호 확인" name="passwordConfirm" type="password" required minLength={MIN_PASSWORD_LENGTH} autoComplete="new-password" />
+        {state.error && <ErrorMessage>{state.error}</ErrorMessage>}
+        <Button type="submit" size="lg" disabled={pending}>{pending ? "가입 중…" : "회원가입"}</Button>
+      </FieldGroup>
     </form>
   );
 }

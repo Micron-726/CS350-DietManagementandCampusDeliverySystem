@@ -1,43 +1,64 @@
+import { ArrowUpRight, CookingPot, MapPin, Store } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { BagLink } from "@/components/bag-link";
+import { ContentEmpty, PageHeading, PageLoading, PageMain } from "@/components/page-ui";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { requireAccount } from "@/lib/auth";
 import { supportsDemoOrdering } from "@/lib/menu-data";
 
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
-      <Suspense fallback={<p>불러오는 중…</p>}><RestaurantList /></Suspense>
-    </main>
+    <PageMain>
+      <Suspense fallback={<PageLoading />}><RestaurantList /></Suspense>
+    </PageMain>
   );
 }
 
 async function RestaurantList() {
   await connection();
-  const account = await requireAccount("customer");
+  await requireAccount("customer");
   const list = await db.query.restaurants.findMany({
     where: (restaurant, { eq }) => eq(restaurant.isActive, true),
     orderBy: (restaurant, { asc }) => [asc(restaurant.campusArea), asc(restaurant.name)],
     with: { provider: true },
   });
   const active = list.filter(({ provider }) => provider.isActive);
+
   return (
     <>
-      <nav aria-label="식당" className="flex gap-5 text-sm"><Link href="/">홈</Link><Link href="/orders">내 주문</Link><BagLink customerId={account.id} /></nav>
-      <h1 className="my-5 text-3xl font-bold">교내 식당</h1>
-      {active.length === 0 ? <p>등록된 식당이 없습니다.</p> : (
+      <PageHeading title="교내 식당" description="KAIST 식당의 위치, 메뉴와 주문 가능 여부를 확인하세요." />
+      {active.length === 0 ? <ContentEmpty icon={Store} title="등록된 식당이 없습니다." /> : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {active.map((restaurant) => (
-            <li key={restaurant.id}>
-              <Link href={`/restaurants/${restaurant.id}`} className="block h-full rounded-xl border border-neutral-200 p-5 hover:border-emerald-600 dark:border-neutral-700">
-                <h2 className="font-semibold">{restaurant.name}</h2>
-                <p className="mt-1 text-sm text-neutral-500">{restaurant.address ?? restaurant.campusArea ?? "위치 정보 없음"}</p>
-                <p className="mt-3 text-sm">{restaurant.acceptingOrders && supportsDemoOrdering(restaurant.provider) ? "모의 주문 가능" : "메뉴 보기"}</p>
-              </Link>
-            </li>
-          ))}
+          {active.map((restaurant) => {
+            const orderable = restaurant.acceptingOrders && supportsDemoOrdering(restaurant.provider);
+            const Icon = orderable ? Store : CookingPot;
+            return (
+              <li key={restaurant.id} className="min-w-0">
+                <Link href={`/restaurants/${restaurant.id}`} className="group/restaurant block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+                  <Card className="h-full transition group-hover/restaurant:ring-primary/45">
+                    <CardHeader>
+                      <div className="mb-2 grid size-11 place-items-center rounded-xl bg-secondary text-secondary-foreground">
+                        <Icon className="size-5" aria-hidden="true" />
+                      </div>
+                      <CardTitle><h2 className="font-semibold">{restaurant.name}</h2></CardTitle>
+                      <CardDescription className="flex items-start gap-1.5">
+                        <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                        {restaurant.address ?? restaurant.campusArea ?? "위치 정보 없음"}
+                      </CardDescription>
+                      <CardAction><ArrowUpRight className="size-4 text-muted-foreground transition group-hover/restaurant:text-primary" aria-hidden="true" /></CardAction>
+                    </CardHeader>
+                    <CardFooter className="mt-auto justify-between gap-3">
+                      <Badge variant={orderable ? "secondary" : "outline"}>{orderable ? "모의 주문 가능" : "메뉴 조회"}</Badge>
+                      <span className="text-xs font-medium text-muted-foreground">메뉴 보기</span>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </>
