@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { searchMeals } from "@/lib/search";
 import type { Priority, SearchCriteria } from "@/lib/ranking";
+import MealCard from "./mealcard";
 
 type Params = Promise<Record<string, string | string[] | undefined>>;
 
@@ -40,27 +41,13 @@ async function Results({ searchParams }: { searchParams: Params }) {
         </p>
       )}
       {results.map((r) => (
-        <div key={r.candidate.menuItemId} className="rounded border p-4">
-          <div className="flex justify-between">
-            <h2 className="font-semibold">{r.candidate.name}</h2>
-            <span className="text-sm text-gray-500">
-              {restaurantInfo[r.candidate.restaurantId]?.name}
-            </span>
-          </div>
-          <p className="text-sm">
-            {r.totalKcal ?? "?"} kcal · {r.totalProteinG ?? "?"} g protein ·{" "}
-            {r.totalPriceKrw.toLocaleString()} KRW
-          </p>
-          {r.selection.length > 0 && (
-            <p className="text-xs text-gray-500">
-              {r.selection.map((s) => `${s.componentName}: ${s.label}`).join(", ")}
-            </p>
-          )}
-          {r.violations.length > 0 && (
-            <p className="text-xs text-red-600">Misses: {r.violations.join(", ")}</p>
-          )}
-          {!r.exact && <p className="text-xs text-gray-400">Nutrition values are estimates</p>}
-        </div>
+        <MealCard
+          key={r.candidate.menuItemId}
+          result={r}
+          restaurantName={restaurantInfo[r.candidate.restaurantId]?.name}
+          targetKcal={criteria.targetKcal}
+          targetProteinG={criteria.targetProteinG}
+        />
       ))}
     </div>
   );
