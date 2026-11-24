@@ -12,12 +12,13 @@ import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@
 import { NativeSelectOption } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import type { ProfileRow } from "@/lib/diet/rows";
-import { ACTIVITY_FACTORS, type ActivityLevel, type GoalMode, type GoalTargets, recalculateTargets, recommendTargets } from "@/lib/diet/goals";
-import { activityLabels, kcalNumber, sexLabels } from "@/lib/diet/labels";
+import { ACTIVITY_FACTORS, type ActivityLevel } from "@/lib/diet/goals";
+import { activityLabels, sexLabels } from "@/lib/diet/labels";
+import { type GoalContext, recalculationChange } from "@/lib/diet/recalc-preview";
 import { PROFILE_LIMITS, parseProfileInput } from "@/lib/diet/validation";
 import { saveProfile, type ProfileState } from "./actions";
 
-type CurrentGoal = { goalMode: GoalMode; adjustmentKcal: number; targets: GoalTargets } | null;
+type CurrentGoal = GoalContext | null;
 
 const initialState: ProfileState = { savedAt: null, error: null, fieldErrors: {}, goalNotice: null };
 const text = (value: number | string | null) => (value === null ? "" : String(value));
@@ -37,14 +38,16 @@ export function ProfileForm({ profile, goal }: { profile: ProfileRow; goal: Curr
   const [handledSave, setHandledSave] = useState(state.savedAt);
   if (state.savedAt !== handledSave) {
     setHandledSave(state.savedAt);
-    setRecalculate(false);
+    if (state.savedAt !== null) setRecalculate(false); // not after an error
   }
   const switchId = useId();
   const update = (field: keyof typeof values) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [field]: event.target.value }));
 
   // C: offer to update the goal only when it has calculated targets and the recommendation changes.
-  const preview = previewRecalculation(values, goal);
+  const parsed = parseProfileInput(values);
+  const change = parsed.ok ? recalculationChange(goal, parsed.value) : null;
+  const preview = change && `새 추천: ${change}`;
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
@@ -114,24 +117,4 @@ export function ProfileForm({ profile, goal }: { profile: ProfileRow; goal: Curr
       <Button type="submit" size="lg" className="self-start" disabled={pending}>{pending ? "저장 중…" : "저장"}</Button>
     </form>
   );
-}
-
-/** "칼로리 2,594 → 2,294 kcal" for the targets that would change, or null when nothing would. */
-function previewRecalculation(values: Record<string, string>, goal: CurrentGoal): string | null {
-  if (!goal) return null;
-  const parsed = parseProfileInput(values);
-  if (!parsed.ok) return null;
-  const recommendation = recommendTargets(parsed.value, goal.goalMode, goal.adjustmentKcal);
-  if (!recommendation.ok) return null;
-  const { targets, changed } = recalculateTargets(goal.targets, recommendation.value);
-  if (!changed) return null;
-
-  const parts: string[] = [];
-  if (targets.calorieTargetKcal !== goal.targets.calorieTargetKcal) {
-    parts.push(`칼로리 ${kcalNumber.format(goal.targets.calorieTargetKcal)} → ${kcalNumber.format(targets.calorieTargetKcal)} kcal`);
-  }
-  if (targets.proteinTargetG !== goal.targets.proteinTargetG) {
-    parts.push(`단백질 ${kcalNumber.format(goal.targets.proteinTargetG)} → ${kcalNumber.format(targets.proteinTargetG)} g`);
-  }
-  return `새 추천: ${parts.join(", ")}`;
 }

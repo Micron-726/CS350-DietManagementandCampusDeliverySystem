@@ -1,4 +1,4 @@
-import { NotebookPen, Settings2, Target, UserRound } from "lucide-react";
+import { NotebookPen, Scale, Settings2, Target, UserRound } from "lucide-react";
 import { ButtonLink } from "@/components/button-link";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { dayLabel, goalModeLabels } from "@/lib/diet/labels";
@@ -35,6 +35,7 @@ export function DayDashboard({ date, today, goal, firstGoalDate, totals, heading
         <CardAction className="flex flex-wrap justify-end gap-1">
           <ButtonLink href="/goals" variant="ghost" size="sm"><Settings2 data-icon="inline-start" />목표</ButtonLink>
           <ButtonLink href="/profile" variant="ghost" size="sm"><UserRound data-icon="inline-start" />신체 정보</ButtonLink>
+          <ButtonLink href="/weight" variant="ghost" size="sm"><Scale data-icon="inline-start" />체중</ButtonLink>
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">

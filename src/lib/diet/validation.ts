@@ -190,6 +190,39 @@ export function parseMealInput(
   return { ok: true, value: { name, date, time, mealType: mealType.value, kcal: kcal.value, proteinG: proteinG.value } };
 }
 
+/* ───────────────────────────── Weight log (FR-16, FR-17) ───────────────────────────── */
+
+export type WeightInput = { weightKg: number; date: string; time: string };
+export type WeightField = keyof WeightInput;
+
+const ONE_DECIMAL = /^\d+(\.\d)?$/;
+
+/** Same range as weight_logs_range (20–400 kg), at most one decimal. No future date/time. */
+export function parseWeightInput(
+  raw: Partial<Record<WeightField, unknown>>,
+  now: { date: string; time: string },
+): Parsed<WeightInput, WeightField> {
+  const errors: FieldErrors<WeightField> = {};
+
+  const text = typeof raw.weightKg === "string" ? raw.weightKg.trim() : "";
+  const weight = Number(text);
+  if (!text) errors.weightKg = "체중을 입력해 주세요.";
+  else if (!ONE_DECIMAL.test(text)) errors.weightKg = "소수 첫째 자리까지 숫자로 입력해 주세요.";
+  else if (weight < PROFILE_LIMITS.weightKg.min || weight > PROFILE_LIMITS.weightKg.max) {
+    errors.weightKg = `${PROFILE_LIMITS.weightKg.min}~${PROFILE_LIMITS.weightKg.max} 사이로 입력해 주세요.`;
+  }
+
+  const date = raw.date;
+  if (!isIsoDate(date)) errors.date = "날짜를 확인해 주세요.";
+  else if (date > now.date) errors.date = "오늘 이후 날짜에는 기록할 수 없습니다.";
+  const time = raw.time;
+  if (!isTime(time)) errors.time = "시간을 확인해 주세요.";
+  else if (date === now.date && time > now.time) errors.time = "아직 지나지 않은 시각에는 기록할 수 없습니다.";
+
+  if (Object.keys(errors).length || !isIsoDate(date) || !isTime(time)) return { ok: false, errors };
+  return { ok: true, value: { weightKg: weight, date, time } };
+}
+
 /* ───────────────────────────── helpers ───────────────────────────── */
 
 function collect<T, K extends string & keyof T>(

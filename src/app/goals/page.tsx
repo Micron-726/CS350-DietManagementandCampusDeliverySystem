@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireAccount } from "@/lib/auth";
 import { dateInKorea } from "@/lib/korea-date";
 import { dietClient, loadGoalOn, loadProfile } from "@/lib/diet/data";
-import { recalculateTargets, recommendTargets } from "@/lib/diet/goals";
+import { recalculationChange } from "@/lib/diet/recalc-preview";
 import { dayLabel, goalModeLabels, kcalNumber, targetSourceLabels } from "@/lib/diet/labels";
 import { type GoalRow, goalTargets, hasCalculatedTarget, profileFields } from "@/lib/diet/rows";
 import { GoalForm } from "./goal-form";
@@ -79,18 +79,6 @@ function TargetTile({ label, value, source }: { label: string; value: string; so
 /** Decision C: the saved profile now gives a different recommendation than the goal's calculated targets. */
 function StaleRecommendation({ goal, profile }: { goal: GoalRow; profile: ReturnType<typeof profileFields> }) {
   if (!hasCalculatedTarget(goal)) return null;
-  const recommendation = recommendTargets(profile, goal.goal_mode, goal.adjustment_kcal);
-  if (!recommendation.ok) return null;
-  const current = goalTargets(goal);
-  const { targets, changed } = recalculateTargets(current, recommendation.value);
-  if (!changed) return null;
-
-  const parts: string[] = [];
-  if (targets.calorieTargetKcal !== current.calorieTargetKcal) {
-    parts.push(`칼로리 ${kcalNumber.format(current.calorieTargetKcal)} → ${kcalNumber.format(targets.calorieTargetKcal)} kcal`);
-  }
-  if (targets.proteinTargetG !== current.proteinTargetG) {
-    parts.push(`단백질 ${kcalNumber.format(current.proteinTargetG)} → ${kcalNumber.format(targets.proteinTargetG)} g`);
-  }
-  return <RecommendationBanner change={parts.join(", ")} />;
+  const change = recalculationChange({ goalMode: goal.goal_mode, adjustmentKcal: goal.adjustment_kcal, targets: goalTargets(goal) }, profile);
+  return change ? <RecommendationBanner change={change} /> : null;
 }

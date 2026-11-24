@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useState } from "react";
 import { NutritionValue } from "@/components/nutrition-value";
+import { useDismissOutside } from "@/components/diet/use-dismiss-outside";
 import { ErrorMessage } from "@/components/page-ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,9 @@ export function MealItem({ meal, today }: { meal: MealRow; today: string }) {
   const [editing, setEditing] = useState(false);
   const closeEditor = useCallback(() => setEditing(false), []);
   const [confirming, setConfirming] = useState(false);
+  // "정말 삭제" goes back to "삭제" on any press outside it (or Esc).
+  const cancelDelete = useCallback(() => setConfirming(false), []);
+  const confirmRef = useDismissOutside<HTMLFormElement>(confirming, cancelDelete);
   const [deleteState, deleteAction, deleting] = useActionState<DeleteState>(() => deleteMeal(meal.id), { error: null });
   const time = timeInKorea(meal.eaten_at);
 
@@ -49,7 +53,7 @@ export function MealItem({ meal, today }: { meal: MealRow; today: string }) {
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => { setEditing(true); setConfirming(false); }}>수정</Button>
               {confirming ? (
-                <form action={deleteAction} className="flex items-center gap-2">
+                <form ref={confirmRef} action={deleteAction} className="flex items-center gap-2">
                   <Button type="submit" variant="destructive" size="sm" disabled={deleting}>{deleting ? "삭제 중…" : "정말 삭제"}</Button>
                   <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={deleting}>취소</Button>
                 </form>

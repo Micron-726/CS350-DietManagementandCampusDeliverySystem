@@ -9,6 +9,8 @@ export type MealRow = Pick<Tables<"meal_logs">,
   "id" | "log_date" | "eaten_at" | "meal_type" | "name" | "kcal" | "kcal_source" | "protein_g" | "protein_source" | "source" | "order_item_id">;
 export const MEAL_COLUMNS = "id, log_date, eaten_at, meal_type, name, kcal, kcal_source, protein_g, protein_source, source, order_item_id";
 
+export type WeightRow = Pick<Tables<"weight_logs">, "id" | "recorded_at" | "weight_kg">;
+
 export function profileFields(row: ProfileRow): ProfileFields {
   return { heightCm: row.height_cm, weightKg: row.weight_kg, age: row.age, sex: row.sex, activityLevel: row.activity_level };
 }

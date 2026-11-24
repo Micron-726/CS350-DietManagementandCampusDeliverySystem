@@ -31,9 +31,10 @@ export function MealForm(props: Props) {
 
   // After adding, clear the form for the next entry (same day, current time).
   const [handledSave, setHandledSave] = useState(state.savedAt);
-  if (props.mode === "add" && state.savedAt !== handledSave) {
+  // Only a NEW successful save resets; an error or a conflict (savedAt null) must keep the input.
+  if (state.savedAt !== handledSave) {
     setHandledSave(state.savedAt);
-    setValues({ ...props.initial, time: timeInKorea() });
+    if (props.mode === "add" && state.savedAt !== null) setValues({ ...props.initial, time: timeInKorea() });
   }
   // After editing, close the editor.
   const onDone = props.mode === "edit" ? props.onDone : null;

@@ -5,7 +5,7 @@ import type { Database, TablesInsert } from "@/lib/supabase/database.types";
 import { type ProfileFields, recalculateTargets, recommendTargets } from "./goals";
 import { goalTargets, hasCalculatedTarget, MEAL_COLUMNS } from "./rows";
 
-export type { GoalRow, MealRow, ProfileRow } from "./rows";
+export type { GoalRow, MealRow, ProfileRow, WeightRow } from "./rows";
 export { goalTargets, hasCalculatedTarget } from "./rows";
 
 /**
@@ -57,6 +57,15 @@ export async function loadMealsOn(supabase: DietClient, userId: string, date: st
     .eq("log_date", date)
     .order("eaten_at")
     .order("created_at");
+}
+
+/** FR-16..18: every weight record, newest first. */
+export async function loadWeights(supabase: DietClient, userId: string) {
+  return supabase.from("weight_logs")
+    .select("id, recorded_at, weight_kg")
+    .eq("user_id", userId)
+    .order("recorded_at", { ascending: false })
+    .order("created_at", { ascending: false });
 }
 
 type GoalVersionRow = Omit<TablesInsert<"diet_goals">, "id" | "user_id" | "effective_from" | "created_at" | "updated_at">;
