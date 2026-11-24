@@ -48,11 +48,12 @@ function record(value: unknown) {
 export function parseMenu(form: FormData) {
   const kcal = nutrition(form.get("kcal"), form.get("kcalSource"), 0, 100000);
   const protein = nutrition(form.get("protein"), form.get("proteinSource"), 0, 10000);
+  const price = text(form.get("price"), 25);
   const menu = {
     name: text(form.get("name"), 160, true),
     category: text(form.get("category"), 80) || null,
     description: text(form.get("description"), 2000) || null,
-    basePriceKrw: numeric(form.get("price"), 0, 10000000, true),
+    basePriceKrw: price ? numeric(price, 0, 10000000, true) : null,
     baseKcal: kcal.value, kcalSource: kcal.source,
     baseProteinG: protein.value, proteinSource: protein.source,
     isAvailable: form.get("available") === "on",
@@ -90,7 +91,7 @@ export function parseMenu(form: FormData) {
   });
 
   if (
-    menu.basePriceKrw + components.reduce((sum, c) => sum + Math.min(...c.levels.map((l) => l.priceDeltaKrw)), 0) < 0 ||
+    (menu.basePriceKrw !== null && menu.basePriceKrw + components.reduce((sum, c) => sum + Math.min(...c.levels.map((l) => l.priceDeltaKrw)), 0) < 0) ||
     (menu.baseKcal !== null && menu.baseKcal + components.reduce((sum, c) => sum + Math.min(...c.levels.map((l) => l.kcalDelta ?? 0)), 0) < 0) ||
     (menu.baseProteinG !== null && menu.baseProteinG + components.reduce((sum, c) => sum + Math.min(...c.levels.map((l) => l.proteinDeltaG ?? 0)), 0) < 0)
   ) return invalid("옵션을 적용한 가격과 영양 총량은 0 이상이어야 합니다.");

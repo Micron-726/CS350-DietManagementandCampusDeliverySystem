@@ -410,7 +410,9 @@ export const menuItems = pgTable(
     description: text(),
     category: text(),
     imageUrl: text(),
-    basePriceKrw: integer().notNull(),
+    basePriceKrw: integer(), // null when the provider has not published a price
+    serviceDate: date(), // date of a rotating menu (Korea time); null for regular catalog items
+    sourceUrl: text(),
     baseKcal: real(),
     kcalSource: nutritionSourceEnum().notNull().default("unavailable"), // IR-05
     baseProteinG: real(),
@@ -426,6 +428,7 @@ export const menuItems = pgTable(
   (t) => [
     unique("menu_items_restaurant_external_uq").on(t.restaurantId, t.externalId),
     index("menu_items_restaurant_idx").on(t.restaurantId),
+    index("menu_items_restaurant_service_date_idx").on(t.restaurantId, t.serviceDate),
     index("menu_items_kcal_protein_idx").on(t.baseKcal, t.baseProteinG),
     index("menu_items_price_idx").on(t.basePriceKrw),
     check("menu_items_price_nonneg", sql`${t.basePriceKrw} >= 0`),
@@ -663,6 +666,8 @@ export type UnitPrefs = {
 export type ExtraNutrition = {
   carbsG?: number;
   fatG?: number;
+  saturatedFatG?: number;
+  transFatG?: number;
   sugarG?: number;
   sodiumMg?: number;
   fiberG?: number;

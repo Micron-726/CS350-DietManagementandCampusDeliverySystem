@@ -1,32 +1,39 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { db } from "@/db";
-import { requireAccount } from "@/lib/auth";
-import { showNutrition, won } from "@/lib/menu";
-import { MENU_WITH_PORTIONS } from "@/lib/menu-data";
+import { requireAccount, selectOwnedRestaurant } from "@/lib/auth";
+import { showNutrition, showPrice } from "@/lib/menu";
+import { MENU_WITH_PORTIONS, menuPeriodOrder, menuServedOn } from "@/lib/menu-data";
+import { RestaurantLinks, storePath } from "../restaurant-links";
 
-export default function Page() {
-  return <Suspense fallback={<p>불러오는 중…</p>}><MenuList /></Suspense>;
+type Props = Pick<PageProps<"/store/menu">, "searchParams">;
+
+export default function Page({ searchParams }: Props) {
+  return <Suspense fallback={<p>불러오는 중…</p>}><MenuList searchParams={searchParams} /></Suspense>;
 }
 
-async function MenuList() {
+async function MenuList({ searchParams }: Props) {
   await connection();
   const account = await requireAccount("restaurant");
   if (!account.restaurantId) return <p>계정에 연결된 식당이 없습니다.</p>;
-  const restaurantId = account.restaurantId;
+  const restaurant = selectOwnedRestaurant(account, (await searchParams).restaurant);
+  if (!restaurant) notFound();
+  const restaurantId = restaurant.id;
   const menu = await db.query.menuItems.findMany({
-    where: (item, { eq }) => eq(item.restaurantId, restaurantId),
-    orderBy: (item, { asc }) => [asc(item.category), asc(item.name)],
+    where: (item, { and, eq }) => and(eq(item.restaurantId, restaurantId), menuServedOn()),
+    orderBy: (item, { asc }) => [menuPeriodOrder, asc(item.category), asc(item.name)],
     with: MENU_WITH_PORTIONS,
   });
 
   return (
     <>
       <div className="mb-6 flex items-center justify-between gap-4">
-        <div><h1 className="text-3xl font-bold">메뉴 관리</h1><p className="mt-1 text-sm text-neutral-500">메뉴 {menu.length}개</p></div>
-        <Link href="/store/menu/new" className="rounded-md bg-emerald-700 px-4 py-2 font-semibold text-white">메뉴 추가</Link>
+        <div><h1 className="text-3xl font-bold">메뉴 관리</h1><p className="mt-1 text-sm text-neutral-500">{restaurant.name} · 메뉴 {menu.length}개</p></div>
+        <Link href={storePath("/store/menu/new", restaurantId)} className="rounded-md bg-emerald-700 px-4 py-2 font-semibold text-white">메뉴 추가</Link>
       </div>
+      <RestaurantLinks account={account} selectedId={restaurantId} path="/store/menu" />
       {menu.length === 0 ? <p>등록된 메뉴가 없습니다.</p> : (
         <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700">
           <table className="w-full text-left text-sm">
@@ -36,8 +43,8 @@ async function MenuList() {
               {menu.map((item) => (
                 <tr key={item.id}>
                   <th scope="row" className="min-w-44 px-4 py-3 font-medium">
-                    <Link href={`/store/menu/${item.id}`} className="underline underline-offset-4">{item.name}</Link>
-                    {item.category && <span className="mt-1 block text-xs text-neutral-500">{item.category}</span>}
+                    <Link href={storePath(`/store/menu/${item.id}`, restaurantId)} className="underline underline-offset-4">{item.name}</Link>
+                    {(item.category || item.serviceDate) && <span className="mt-1 block text-xs text-neutral-500">{[item.category, item.serviceDate].filter(Boolean).join(" · ")}</span>}
                   </th>
                   <td className="min-w-32 px-4 py-3">
                     {item.components.length > 0 ? (
@@ -51,7 +58,7 @@ async function MenuList() {
                       </details>
                     ) : "정보 없음"}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 tabular-nums">{won.format(item.basePriceKrw)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 tabular-nums">{showPrice(item.basePriceKrw)}</td>
                   <td className="whitespace-nowrap px-4 py-3">{showNutrition(item.baseKcal, "kcal", item.kcalSource)}</td>
                   <td className="whitespace-nowrap px-4 py-3">{showNutrition(item.baseProteinG, "g", item.proteinSource)}</td>
                   <td className="whitespace-nowrap px-4 py-3">{item.isAvailable ? "판매 중" : "판매 중지"}</td>

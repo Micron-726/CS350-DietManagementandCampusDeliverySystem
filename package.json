@@ -9,7 +9,10 @@
     "db:migrate": "supabase migration up",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "cafeteria:account": "tsx scripts/kaist/create-account.ts",
+    "cafeteria:sync": "tsx scripts/kaist/sync.ts",
+    "cafeteria:test": "tsx --test scripts/kaist/cafeteria.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -26,12 +29,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "1.0.0",
     "dotenv": "^18.0.10",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "supabase": "^3.1.0",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

@@ -1,14 +1,14 @@
-import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { BagLink } from "@/components/bag-link";
 import { db } from "@/db";
 import { requireAccount } from "@/lib/auth";
 import { isUuid } from "@/lib/menu";
+import { dateInKorea } from "@/lib/korea-date";
 import { loadMenuItem, supportsDemoOrdering } from "@/lib/menu-data";
-import { checkout } from "./actions";
-import { CheckoutForm } from "./checkout-form";
+import { MenuOptions } from "./menu-options";
 
 type Props = Pick<PageProps<"/restaurants/[restaurantId]/[itemId]">, "params">;
 
@@ -22,23 +22,27 @@ export default function Page({ params }: Props) {
 
 async function MenuDetails({ params }: Props) {
   await connection();
-  await requireAccount("customer");
+  const account = await requireAccount("customer");
   const { restaurantId, itemId } = await params;
   if (!isUuid(restaurantId) || !isUuid(itemId)) notFound();
   const [restaurant, item] = await Promise.all([
     db.query.restaurants.findFirst({ where: (store, { eq }) => eq(store.id, restaurantId), with: { provider: true } }),
     loadMenuItem(restaurantId, itemId),
   ]);
-  if (!restaurant?.isActive || !restaurant.provider.isActive || !item?.isAvailable) notFound();
-  const action = restaurant.acceptingOrders && supportsDemoOrdering(restaurant.provider)
-    ? checkout.bind(null, restaurantId, itemId, item.updatedAt.getTime()) : undefined;
+  if (!restaurant?.isActive || !restaurant.provider.isActive || !item?.isAvailable || (item.serviceDate && item.serviceDate !== dateInKorea())) notFound();
+  const bagCustomerId = restaurant.acceptingOrders && item.basePriceKrw !== null && supportsDemoOrdering(restaurant.provider)
+    ? account.id : null;
   return (
     <>
-      <Link href={`/restaurants/${restaurantId}`} className="text-sm underline underline-offset-4">{restaurant.name} 메뉴</Link>
+      <nav aria-label="메뉴" className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <Link href={`/restaurants/${restaurantId}`} className="underline underline-offset-4">{restaurant.name} 메뉴</Link>
+        <BagLink customerId={account.id} />
+      </nav>
       <h1 className="mb-2 mt-5 text-3xl font-bold">{item.name}</h1>
-      {item.category && <p className="text-sm text-neutral-500">{item.category}</p>}
-      {item.description && <p className="mt-3 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{item.description}</p>}
-      <div className="mt-6"><CheckoutForm item={item} requestId={randomUUID()} action={action} /></div>
+      {(item.category || item.serviceDate) && <p className="text-sm text-neutral-500">{[item.category, item.serviceDate].filter(Boolean).join(" · ")}</p>}
+      {item.description && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{item.description}</p>}
+      {item.sourceUrl && <a className="mt-3 inline-block text-sm underline underline-offset-4" href={item.sourceUrl}>KAIST 공식 식단</a>}
+      <div className="mt-6"><MenuOptions key={`${item.id}:${item.updatedAt.getTime()}`} item={item} bagCustomerId={bagCustomerId} /></div>
     </>
   );
 }

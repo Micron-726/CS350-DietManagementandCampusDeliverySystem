@@ -11,12 +11,11 @@ import { demoPaymentMethod, orderActions, type Transition } from "@/lib/order-st
 export async function updateOrder(orderId: string, _: string | null, form: FormData) {
   const account = await requireAccount("restaurant");
   const transition = form.get("transition") as Transition;
-  const restaurantId = account.restaurantId;
-  if (!restaurantId || !isUuid(orderId)) return "주문 정보를 확인해 주세요.";
+  if (!isUuid(orderId)) return "주문 정보를 확인해 주세요.";
 
   const changed = await db.transaction(async (tx) => {
     const [order] = await tx.select({ status: orders.status, fulfillment: orders.fulfillmentType }).from(orders).innerJoin(restaurants, eq(orders.restaurantId, restaurants.id))
-      .where(and(eq(orders.id, orderId), eq(orders.restaurantId, restaurantId), eq(restaurants.ownerId, account.id)))
+      .where(and(eq(orders.id, orderId), eq(restaurants.ownerId, account.id)))
       .for("update", { of: orders });
     if (!order) return false;
     const [delivery] = await tx.select().from(deliveries).where(eq(deliveries.orderId, orderId));

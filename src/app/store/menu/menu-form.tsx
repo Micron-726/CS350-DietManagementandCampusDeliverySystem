@@ -37,7 +37,8 @@ type InitialMenu = {
   name: string;
   category: string | null;
   description: string | null;
-  basePriceKrw: number;
+  basePriceKrw: number | null;
+  sourceUrl: string | null;
   baseKcal: number | null;
   kcalSource: NutritionSource;
   baseProteinG: number | null;
@@ -92,7 +93,7 @@ export function MenuForm({ item, initialComponents, action }: {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-sm">메뉴명<input className={input} name="name" required maxLength={160} value={menu.name} onChange={(event) => updateMenu({ name: event.target.value })} /></label>
             <label className="grid gap-1 text-sm">분류<input className={input} name="category" maxLength={80} value={menu.category} onChange={(event) => updateMenu({ category: event.target.value })} /></label>
-            <label className="grid gap-1 text-sm">기본 가격 (원)<input className={input} name="price" type="number" required min={0} step={1} value={menu.price} onChange={(event) => updateMenu({ price: event.target.value })} /></label>
+            <label className="grid gap-1 text-sm">기본 가격 (원)<input className={input} name="price" type="number" required={!item?.sourceUrl} min={0} step={1} value={menu.price} onChange={(event) => updateMenu({ price: event.target.value })} /></label>
             <label className="flex items-center gap-2 self-end py-2"><input name="available" type="checkbox" checked={menu.available} onChange={(event) => updateMenu({ available: event.target.checked })} /> 판매 중</label>
           </div>
           <label className="grid gap-1 text-sm">설명<textarea className={input} name="description" rows={3} maxLength={2000} value={menu.description} onChange={(event) => updateMenu({ description: event.target.value })} /></label>

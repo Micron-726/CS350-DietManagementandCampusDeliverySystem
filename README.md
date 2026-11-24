@@ -134,6 +134,7 @@ The local seed files create these accounts on `npm run db:reset`.
 | `student@kaist.ac.kr` | `student` | customer |
 | `store@gmail.com` | `store` | restaurant, owns **W2 Bowl House** |
 | `byeollidalli@example.com` | `demo-store` | restaurant, owns **별리달리** |
+| `kaist-cafeteria@example.com` | `demo-cafeteria` | restaurant, manages all five **KAIST 학식** locations |
 
 For your own test accounts, sign up with any `<name>@kaist.ac.kr` address. Other domains are
 rejected, by the app and by the database.
@@ -151,7 +152,8 @@ type Account = {
   email: string;
   displayName: string | null;
   role: "customer" | "restaurant";
-  restaurantId: string | null;        // restaurant owned by a store account, else null
+  restaurantId: string | null;        // default restaurant selection, else null
+  restaurants: { id: string; name: string; address: string | null; campusArea: string | null }[];
 };
 
 await getCurrentAccount();            // Account | null (signed out)
@@ -199,8 +201,9 @@ export async function updateMenu(formData: FormData) {
 }
 ```
 
-- Store pages live under `/store/*` and start with `requireAccount("restaurant")`. Scope every
-  store query to `account.restaurantId`.
+- Store pages live under `/store/*` and start with `requireAccount("restaurant")`. Resolve the selected
+  restaurant with `selectOwnedRestaurant`, then scope queries to that location. Store actions also check
+  the restaurant’s owner in the database.
 - Personal data (profiles, goals, logs) is still read with supabase-js, where RLS limits rows to
   the signed-in user. `account.id` is the same id as `auth.uid()`.
 
@@ -241,7 +244,8 @@ The function is not callable from supabase-js, so clients can't create store acc
 | `/store` | Store home |
 | `/store/menu` | Add and edit the store’s menus, nutrition, and portion options |
 | `/store/orders` | Review orders, accept or reject them, and update delivery status |
-| `/restaurants` | Browse the campus catalog and place demo orders with eligible stores |
+| `/restaurants` | Browse the campus catalog and add meals from eligible stores to your bag |
+| `/bag` | Review selections and quantities, then check out together |
 | `/orders` | Review your customer order history |
 
 `/login*`, `/signup*` and `/auth*` are open to signed-out users; everything else redirects to
@@ -249,14 +253,46 @@ The function is not callable from supabase-js, so clients can't create store acc
 
 ## Restaurant and order demo
 
-Sign in as the demo student on `/login/student`, then open `/restaurants` and choose a menu.
-Pick a simulated payment result at checkout. From a separate browser session, sign in to
+Sign in as the demo student on `/login/student`, then open `/restaurants` and add meals to your bag.
+Review quantities and choose a simulated payment result in `/bag`. One checkout creates an order per store.
+From a separate browser session, sign in to
 `/login/store` as the matching store and use `/store/orders`. Accepted orders progress from
 preparing to dispatch and delivery. Payment approvals and declines are simulations.
 
 The local [별리달리 seed](supabase/seeds/byeolli-dalli.sql) contains the supplied menu and prices.
 Each estimate uses reference foods and assumed serving weights documented in that file. Items
 with insufficient details show unknown nutrition. Seeded portion weights are fixed assumptions.
+
+## KAIST cafeteria menus
+
+The [official KAIST menu page](https://www.kaist.ac.kr/kr/html/campus/053001.html) publishes rotating
+menus for 카이마루 북측식당, 서맛골, 동맛골 학생식당, 동맛골 교직원식당, and 교수회관. The app shows
+entries for today in Korea. Each offering keeps the source link, menu date, and published price and
+nutrients when available. The same date can be synced again without creating duplicate menu entries.
+Edits from the store account are kept for that offering. Cafeteria listings are for browsing.
+
+### Run locally
+
+With the local stack configured in `.env.local`, run `npm run cafeteria:sync`. For a specific date,
+running `npm run cafeteria:sync -- 2026-11-24` loads that day. `npm run cafeteria:test` checks parsing.
+On an existing local database, apply the migrations first with `npm run db:migrate`. The demo account
+is created by `npm run db:reset` when setting up a fresh local database. On an existing database, you
+can create it with `npm run cafeteria:account` and the account credentials from the demo table above.
+
+### Enable the daily job on the shared project
+
+1. Merge the workflow to the default branch and apply the Supabase migrations using the shared project procedure above.
+2. With an admin `DATABASE_URL` and private `CAFETERIA_ACCOUNT_EMAIL` and `CAFETERIA_ACCOUNT_PASSWORD`
+   environment variables, run `npm run cafeteria:account` once to provision the store login and link its five locations.
+3. In the shared database, create a login for the scheduler with the `kaist_cafeteria_sync` role. In `psql`, set its password interactively with `\password kaist_cafeteria_worker`.
+
+   ```sql
+   create role kaist_cafeteria_worker login in role kaist_cafeteria_sync;
+   ```
+
+4. Add the job login’s connection string as the GitHub Actions secret `CAFETERIA_DATABASE_URL`.
+   For the Supabase shared pooler, use `kaist_cafeteria_worker.<project-ref>` as the username and require SSL.
+   The workflow runs daily at 06:17 Korea time. Run **Sync KAIST cafeteria menus** manually in Actions for the first import.
 
 ## Data access
 

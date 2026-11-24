@@ -1,28 +1,36 @@
 import { eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { OrderCard } from "@/components/order-card";
 import { orders } from "@/db/schema";
-import { requireAccount } from "@/lib/auth";
+import { requireAccount, selectOwnedRestaurant } from "@/lib/auth";
 import { loadOrders } from "@/lib/order-data";
 import { demoPaymentMethod, orderActions } from "@/lib/order-status";
 import { OrderActions } from "./order-actions";
+import { RestaurantLinks } from "../restaurant-links";
 
-export default function Page() {
-  return <Suspense fallback={<p>불러오는 중…</p>}><StoreOrders /></Suspense>;
+type Props = Pick<PageProps<"/store/orders">, "searchParams">;
+
+export default function Page({ searchParams }: Props) {
+  return <Suspense fallback={<p>불러오는 중…</p>}><StoreOrders searchParams={searchParams} /></Suspense>;
 }
 
-async function StoreOrders() {
+async function StoreOrders({ searchParams }: Props) {
   await connection();
   const account = await requireAccount("restaurant");
   if (!account.restaurantId) return <p>계정에 연결된 식당이 없습니다.</p>;
-  const history = await loadOrders(eq(orders.restaurantId, account.restaurantId));
+  const restaurant = selectOwnedRestaurant(account, (await searchParams).restaurant);
+  if (!restaurant) notFound();
+  const history = await loadOrders(eq(orders.restaurantId, restaurant.id));
   const active = history.filter(({ status }) => status === "submitted" || status === "confirmed");
   const past = history.filter(({ status }) => status !== "submitted" && status !== "confirmed");
 
   return (
     <>
-      <h1 className="mb-6 text-3xl font-bold">주문 관리</h1>
+      <h1 className="text-3xl font-bold">주문 관리</h1>
+      <p className="mb-6 mt-1 text-sm text-neutral-500">{restaurant.name}</p>
+      <RestaurantLinks account={account} selectedId={restaurant.id} path="/store/orders" />
       <div className="space-y-8">
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">진행 중 {active.length}건</h2>

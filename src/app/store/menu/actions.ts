@@ -9,12 +9,12 @@ import { menuComponents, menuItems, portionLevels, restaurants } from "@/db/sche
 import { requireAccount } from "@/lib/auth";
 import { isUuid } from "@/lib/menu";
 import { MENU_WITH_PORTIONS } from "@/lib/menu-data";
+import { storePath } from "../restaurant-links";
 import { MenuInputError, parseMenu } from "./validate";
 
-export async function saveMenu(itemId: string | null, version: number | null, _: string | null, form: FormData) {
+export async function saveMenu(restaurantId: string, itemId: string | null, version: number | null, _: string | null, form: FormData) {
   const account = await requireAccount("restaurant");
-  const restaurantId = account.restaurantId;
-  if (!restaurantId || (itemId !== null && !isUuid(itemId))) return "연결된 가게와 메뉴를 확인해 주세요.";
+  if (!isUuid(restaurantId) || (itemId !== null && !isUuid(itemId))) return "연결된 가게와 메뉴를 확인해 주세요.";
 
   try {
     const { menu, components } = parseMenu(form);
@@ -26,12 +26,14 @@ export async function saveMenu(itemId: string | null, version: number | null, _:
       const id = itemId ?? randomUUID();
       const menuScope = and(eq(menuItems.id, id), eq(menuItems.restaurantId, restaurantId));
       if (itemId) {
-        const [current] = await tx.select({ updatedAt: menuItems.updatedAt }).from(menuItems).where(menuScope).for("update");
+        const [current] = await tx.select({ updatedAt: menuItems.updatedAt, sourceUrl: menuItems.sourceUrl }).from(menuItems).where(menuScope).for("update");
         if (!current || current.updatedAt.getTime() !== version) {
           throw new MenuInputError("메뉴가 변경되었습니다. 화면을 다시 열어 주세요.");
         }
-        await tx.update(menuItems).set(menu).where(menuScope);
+        if (!current.sourceUrl && menu.basePriceKrw === null) throw new MenuInputError("기본 가격을 입력해 주세요.");
+        await tx.update(menuItems).set({ ...menu, ...(current.sourceUrl ? { lastSyncedAt: null } : {}) }).where(menuScope);
       } else {
+        if (menu.basePriceKrw === null) throw new MenuInputError("기본 가격을 입력해 주세요.");
         await tx.insert(menuItems).values({ ...menu, id, restaurantId, externalId: id });
       }
 
@@ -74,5 +76,5 @@ export async function saveMenu(itemId: string | null, version: number | null, _:
 
   revalidatePath("/store/menu");
   revalidatePath(`/restaurants/${restaurantId}`);
-  redirect("/store/menu");
+  redirect(storePath("/store/menu", restaurantId));
 }

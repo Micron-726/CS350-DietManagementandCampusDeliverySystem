@@ -1,9 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { restaurants } from "@/db/schema";
 import { HOME_BY_ROLE, requireAccount } from "@/lib/auth";
 import { logout } from "../login/actions";
 import { DeleteAccountForm } from "./delete-account-form";
@@ -22,16 +19,6 @@ export default function AccountPage() {
 async function AccountDetails() {
   await connection();
   const account = await requireAccount();
-  const restaurant = account.restaurantId
-    ? (
-        await db
-          .select({ name: restaurants.name })
-          .from(restaurants)
-          .where(eq(restaurants.id, account.restaurantId))
-          .limit(1)
-      )[0]
-    : undefined;
-
   return (
     <>
       <dl className="mb-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
@@ -42,7 +29,7 @@ async function AccountDetails() {
         {account.role === "restaurant" && (
           <>
             <dt className="text-neutral-500">식당</dt>
-            <dd>{restaurant?.name ?? "연결된 식당 없음"}</dd>
+            <dd>{account.restaurants.map(({ name }) => name).join(", ") || "연결된 식당 없음"}</dd>
           </>
         )}
       </dl>

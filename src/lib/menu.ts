@@ -20,6 +20,10 @@ export const menuComponentLabels: Record<MenuComponentType, string> = {
 };
 
 export const won = new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW" });
+export function showPrice(value: number | null) {
+  return value === null ? "가격 정보 없음" : won.format(value);
+}
+
 const number = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
 
 export function showNutrition(value: number | null, unit: string, source: NutritionSource) {
@@ -52,7 +56,7 @@ function totalNutrient(base: number | null, source: NutritionSource, deltas: {
 
 export function menuTotals(item: MenuItem, levels: MenuLevel[]) {
   return {
-    price: item.basePriceKrw + levels.reduce((sum, level) => sum + level.priceDeltaKrw, 0),
+    price: item.basePriceKrw === null ? null : item.basePriceKrw + levels.reduce((sum, level) => sum + level.priceDeltaKrw, 0),
     kcal: totalNutrient(item.baseKcal, item.kcalSource, levels.map((level) => ({
       value: level.kcalDelta, source: level.kcalSource, isDefault: level.isDefault,
     }))),

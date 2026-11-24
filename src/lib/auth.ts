@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { profiles, restaurants } from "@/db/schema";
 import { createClient } from "@/lib/supabase/server";
@@ -19,13 +19,16 @@ import { createClient } from "@/lib/supabase/server";
  */
 export type AccountRole = (typeof profiles.role.enumValues)[number];
 
+type OwnedRestaurant = Pick<typeof restaurants.$inferSelect, "id" | "name" | "address" | "campusArea">;
+
 export type Account = {
   id: string; // auth.users.id = profiles.id
   email: string;
   displayName: string | null;
   role: AccountRole;
-  /** Restaurant owned by a store account (restaurants.owner_id). null for customers / none yet. */
+  /** Default selection for store accounts, null for customers and unlinked accounts. */
   restaurantId: string | null;
+  restaurants: OwnedRestaurant[];
 };
 
 /** First page for each account type. */
@@ -41,25 +44,30 @@ export const getCurrentAccount = cache(async (): Promise<Account | null> => {
   const claims = data?.claims;
   if (!claims?.sub) return null;
 
-  const [row] = await db
+  const rows = await db
     .select({
       displayName: profiles.displayName,
       role: profiles.role,
-      restaurantId: restaurants.id,
+      restaurant: {
+        id: restaurants.id, name: restaurants.name, address: restaurants.address, campusArea: restaurants.campusArea,
+      },
     })
     .from(profiles)
     .leftJoin(restaurants, eq(restaurants.ownerId, profiles.id))
     .where(eq(profiles.id, claims.sub))
-    .limit(1);
+    .orderBy(asc(restaurants.name), asc(restaurants.id));
+  const [row] = rows;
   // A valid token whose user was deleted (e.g. after leaving) has no profile.
   if (!row) return null;
 
+  const owned = row.role === "restaurant" ? rows.flatMap(({ restaurant }) => restaurant ? [restaurant] : []) : [];
   return {
     id: claims.sub,
     email: claims.email ?? "",
     displayName: row.displayName,
     role: row.role,
-    restaurantId: row.restaurantId,
+    restaurantId: owned[0]?.id ?? null,
+    restaurants: owned,
   };
 });
 
@@ -72,4 +80,10 @@ export async function requireAccount(role?: AccountRole): Promise<Account> {
   if (!account) redirect("/login");
   if (role && account.role !== role) redirect(HOME_BY_ROLE[account.role]);
   return account;
+}
+
+/** Resolve a store selection only from the account's owned locations. */
+export function selectOwnedRestaurant(account: Account, requested: string | string[] | undefined) {
+  const id = requested ?? account.restaurantId;
+  return account.restaurants.find((restaurant) => restaurant.id === id);
 }

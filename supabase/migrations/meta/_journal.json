@@ -50,6 +50,27 @@
       "when": 1795145817075,
       "tag": "20261120033657_account",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795511990853,
+      "tag": "20261124091950_cafeteria_menu_dates",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795511999575,
+      "tag": "20261124091959_kaist_cafeterias",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795512241510,
+      "tag": "20261124092401_kaist_sync_privileges",
+      "breakpoints": true
     }
   ]
 }

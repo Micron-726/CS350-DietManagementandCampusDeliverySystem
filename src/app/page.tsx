@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { BagLink } from "@/components/bag-link";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { menuItems } from "@/db/schema";
-import { asc } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { requireAccount } from "@/lib/auth";
+import { dateInKorea } from "@/lib/korea-date";
+import { menuServedOn } from "@/lib/menu-data";
 import { logout } from "./login/actions";
 
 export default function Home() {
@@ -30,9 +33,7 @@ async function Dashboard() {
   const supabase = await createClient();
 
   // personal → supabase-js (RLS applies)
-  const today = new Date().toLocaleDateString("sv-SE", {
-    timeZone: "Asia/Seoul",
-  });
+  const today = dateInKorea();
   const { data: logs } = await supabase
     .from("meal_logs")
     .select("name, kcal, protein_g")
@@ -42,6 +43,7 @@ async function Dashboard() {
   const menu = await db
     .select()
     .from(menuItems)
+    .where(and(eq(menuItems.isAvailable, true), menuServedOn(today)))
     .orderBy(asc(menuItems.name))
     .limit(10);
 
@@ -52,6 +54,7 @@ async function Dashboard() {
         <Link href="/account">내 계정</Link>
         <Link href="/restaurants">교내 식당</Link>
         <Link href="/orders">내 주문</Link>
+        <BagLink customerId={account.id} />
       </nav>
       <pre>{JSON.stringify({ logs, menu }, null, 2)}</pre>
       <form action={logout}>
