@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ClipboardList, House, LayoutGrid, Store } from "lucide-react";
+import { ClipboardList, House, LayoutGrid, NotebookPen, Store } from "lucide-react";
 import { ButtonLink } from "@/components/button-link";
 import type { AccountRole } from "@/lib/auth";
 
 const links = {
   customer: [
     { href: "/", label: "홈", icon: House, exact: true },
+    { href: "/diary", label: "식단 기록", icon: NotebookPen },
     { href: "/restaurants", label: "교내 식당", icon: Store },
     { href: "/orders", label: "내 주문", icon: ClipboardList },
   ],
@@ -21,7 +22,7 @@ const links = {
 export function SiteNavigation({ role }: { role: AccountRole }) {
   const pathname = usePathname();
   return (
-    <nav aria-label={role === "customer" ? "학생 메뉴" : "가게 관리"} className="col-span-2 row-start-2 grid grid-cols-3 gap-1 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:flex sm:justify-center">
+    <nav aria-label={role === "customer" ? "학생 메뉴" : "가게 관리"} className={`col-span-2 row-start-2 grid ${links[role].length === 4 ? "grid-cols-4" : "grid-cols-3"} gap-1 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:flex sm:justify-center`}>
       {links[role].map(({ href, label, icon: Icon, exact }) => {
         const active = pathname === href || (!exact && pathname.startsWith(`${href}/`));
         return (

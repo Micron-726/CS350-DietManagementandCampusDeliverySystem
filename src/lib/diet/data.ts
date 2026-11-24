@@ -39,6 +39,16 @@ export async function loadGoalOn(supabase: DietClient, userId: string, date: str
     .maybeSingle();
 }
 
+/** Earliest goal version: tells "never set a goal" apart from "no goal yet on that day". */
+export async function loadFirstGoalDate(supabase: DietClient, userId: string) {
+  return supabase.from("diet_goals")
+    .select("effective_from")
+    .eq("user_id", userId)
+    .order("effective_from")
+    .limit(1)
+    .maybeSingle();
+}
+
 /** FR-38: one day's food log, in the order eaten. */
 export async function loadMealsOn(supabase: DietClient, userId: string, date: string) {
   return supabase.from("meal_logs")

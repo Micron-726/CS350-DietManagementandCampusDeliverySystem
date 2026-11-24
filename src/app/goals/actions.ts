@@ -19,6 +19,7 @@ const fields: GoalField[] = ["goalMode", "adjustmentKcal", "calorieSource", "cus
 function revalidateGoalPages() {
   revalidatePath("/goals");
   revalidatePath("/profile");
+  revalidatePath("/diary");
   revalidatePath("/");
 }
 

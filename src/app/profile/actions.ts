@@ -49,6 +49,7 @@ export async function saveProfile(_prev: ProfileState, form: FormData): Promise<
 
   revalidatePath("/profile");
   revalidatePath("/goals");
+  revalidatePath("/diary");
   revalidatePath("/");
   return { savedAt: Date.now(), error: null, fieldErrors: {}, goalNotice };
 }

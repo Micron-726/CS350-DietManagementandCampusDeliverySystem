@@ -1,20 +1,20 @@
 import { and, asc, eq } from "drizzle-orm";
-import { ArrowRight, BookOpen, ImageIcon, MapPin, Utensils } from "lucide-react";
+import { ArrowRight, ImageIcon, MapPin, Utensils } from "lucide-react";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ButtonLink } from "@/components/button-link";
 import { MenuListCard } from "@/components/menu-list-card";
+import { DayDashboard } from "@/components/diet/day-dashboard";
 import { ContentEmpty, ErrorMessage, PageLoading, PageMain } from "@/components/page-ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { menuItems, providers, restaurants } from "@/db/schema";
 import { requireAccount } from "@/lib/auth";
 import { dateInKorea } from "@/lib/korea-date";
 import { menuServedOn } from "@/lib/menu-data";
-import { createClient } from "@/lib/supabase/server";
+import { dietClient, loadFirstGoalDate, loadGoalOn, loadMealsOn } from "@/lib/diet/data";
+import { dayTotals } from "@/lib/diet/meals";
 
 const dateLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long", timeZone: "Asia/Seoul" });
-const nutrientNumber = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
 
 export default function Home() {
   return (
@@ -26,11 +26,14 @@ export default function Home() {
 
 async function Dashboard() {
   await connection();
-  await requireAccount("customer");
-  const supabase = await createClient();
+  const account = await requireAccount("customer");
+  const supabase = await dietClient();
   const today = dateInKorea();
-  const [{ data: logs, error: logsError }, menu] = await Promise.all([
-    supabase.from("meal_logs").select("id, name, kcal, protein_g").eq("log_date", today).order("eaten_at"),
+  // Part B (IR-01, NFR-14): today's calorie/protein rings at the top of the home page.
+  const [meals, goal, firstGoal, menu] = await Promise.all([
+    loadMealsOn(supabase, account.id, today),
+    loadGoalOn(supabase, account.id, today),
+    loadFirstGoalDate(supabase, account.id),
     db.select({ item: menuItems, restaurantName: restaurants.name })
       .from(menuItems)
       .innerJoin(restaurants, eq(menuItems.restaurantId, restaurants.id))
@@ -41,8 +44,15 @@ async function Dashboard() {
       .orderBy(asc(menuItems.name)).limit(10),
   ]);
 
+  const dashboardError = meals.error || goal.error || firstGoal.error;
+
   return (
     <>
+      {dashboardError || !meals.data ? <ErrorMessage>오늘의 식단 정보를 불러올 수 없습니다.</ErrorMessage> : (
+        <DayDashboard date={today} today={today} goal={goal.data} firstGoalDate={firstGoal.data?.effective_from ?? null} diaryLink
+          totals={dayTotals(meals.data.map((meal) => ({ kcal: meal.kcal, proteinG: meal.protein_g })))} />
+      )}
+
       <section aria-labelledby="home-title" className="overflow-hidden rounded-3xl border bg-card text-card-foreground sm:grid sm:grid-cols-[1.05fr_1fr]">
         <div className="flex flex-col items-start justify-center gap-5 px-6 py-8 sm:px-9 sm:py-11 lg:px-12 lg:py-14">
           <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground"><MapPin className="size-4" aria-hidden="true" /> KAIST 교내 식당</p>
@@ -76,29 +86,6 @@ async function Dashboard() {
         ) : <ContentEmpty icon={Utensils} title="표시할 메뉴가 없습니다." />}
       </section>
 
-      <section aria-labelledby="daily-logs" className="flex flex-col gap-4">
-        <h2 id="daily-logs" className="text-2xl font-bold tracking-tight sm:text-3xl">오늘의 식사 기록</h2>
-        {logsError ? <ErrorMessage>식사 기록을 불러올 수 없습니다.</ErrorMessage> : logs?.length ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>기록한 식사 {logs.length}건</CardTitle>
-              <CardDescription>열량과 단백질이 기록된 값을 표시합니다.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="divide-y">
-                {logs.map(({ id, name, kcal, protein_g }) => (
-                  <li key={id} className="flex flex-wrap justify-between gap-2 py-2 first:pt-0 last:pb-0">
-                    <span className="font-medium">{name}</span>
-                    <span className="text-muted-foreground tabular-nums">
-                      {kcal === null ? "열량 미기록" : `${nutrientNumber.format(kcal)} kcal`} · {protein_g === null ? "단백질 미기록" : `${nutrientNumber.format(protein_g)} g 단백질`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        ) : <ContentEmpty icon={BookOpen} title="오늘 기록한 식사가 없습니다." />}
-      </section>
     </>
   );
 }
