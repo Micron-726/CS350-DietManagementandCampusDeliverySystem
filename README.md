@@ -127,12 +127,13 @@ Two account types, stored in `profiles.role`:
 
 ### Demo accounts (local stack)
 
-Created by `supabase/seed.sql` on every `npm run db:reset`:
+The local seed files create these accounts on `npm run db:reset`.
 
 | Email | Password | Role |
 |---|---|---|
 | `student@kaist.ac.kr` | `student` | customer |
-| `store@gmail.com` | `store` | restaurant, owns **W2 Bowl House** (`restaurants.owner_id`) |
+| `store@gmail.com` | `store` | restaurant, owns **W2 Bowl House** |
+| `byeollidalli@example.com` | `demo-store` | restaurant, owns **별리달리** |
 
 For your own test accounts, sign up with any `<name>@kaist.ac.kr` address. Other domains are
 rejected, by the app and by the database.
@@ -237,18 +238,33 @@ The function is not callable from supabase-js, so clients can't create store acc
 | `/signup` | Student sign-up |
 | `/signup/store` | How a store requests an account |
 | `/account` | Account info, log out, delete account (deletes all personal data) |
-| `/store` | Store home (placeholder for part D) |
+| `/store` | Store home |
+| `/store/menu` | Add and edit the store’s menus, nutrition, and portion options |
+| `/store/orders` | Review orders, accept or reject them, and update delivery status |
+| `/restaurants` | Browse the campus catalog and place demo orders with eligible stores |
+| `/orders` | Review your customer order history |
 
 `/login*`, `/signup*` and `/auth*` are open to signed-out users; everything else redirects to
 `/login` (`src/lib/supabase/proxy.ts`).
+
+## Restaurant and order demo
+
+Sign in as the demo student on `/login/student`, then open `/restaurants` and choose a menu.
+Pick a simulated payment result at checkout. From a separate browser session, sign in to
+`/login/store` as the matching store and use `/store/orders`. Accepted orders progress from
+preparing to dispatch and delivery. Payment approvals and declines are simulations.
+
+The local [별리달리 seed](supabase/seeds/byeolli-dalli.sql) contains the supplied menu and prices.
+Each estimate uses reference foods and assumed serving weights documented in that file. Items
+with insufficient details show unknown nutrition. Seeded portion weights are fixed assumptions.
 
 ## Data access
 
 - **Personal data** (profiles, goals, meal/weight logs): `supabase-js` from `@/lib/supabase/*`.
   Row-level security limits each user to their own rows.
 - **Catalog and server-only data** (providers, restaurants, menus, orders): Drizzle `db` from
-  `@/db`, server code only. Orders are created and updated by the server after the provider
-  responds, never by the client.
+  `@/db`, server code only. The server places demo orders, records payment and delivery events,
+  and confirms orders when the linked store accepts them.
 
 ## Next.js notes
 

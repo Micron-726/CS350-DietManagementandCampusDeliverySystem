@@ -48,7 +48,11 @@ async function Dashboard() {
   return (
     <>
       <p>Signed in as {account.email}</p>
-      <Link href="/account" className="underline">내 계정</Link>
+      <nav aria-label="학생 메뉴" className="my-3 flex flex-wrap gap-4 text-sm underline underline-offset-4">
+        <Link href="/account">내 계정</Link>
+        <Link href="/restaurants">교내 식당</Link>
+        <Link href="/orders">내 주문</Link>
+      </nav>
       <pre>{JSON.stringify({ logs, menu }, null, 2)}</pre>
       <form action={logout}>
         <button className="rounded border px-3 py-1">Log out</button>

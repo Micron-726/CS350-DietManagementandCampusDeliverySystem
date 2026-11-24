@@ -1,5 +1,5 @@
 -- Demo catalog data, loaded by `supabase db reset` (see [db.seed] in config.toml).
--- All providers, restaurants and menus are fictional. Coordinates are approximate points on
+-- The providers, restaurants and menus in this file are fictional. Coordinates are approximate points on
 -- the KAIST main campus so distance search (FR-22) has something to work with.
 --
 -- The data is chosen to exercise the SRS:
