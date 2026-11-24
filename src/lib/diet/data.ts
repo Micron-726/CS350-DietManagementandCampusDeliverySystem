@@ -3,9 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, TablesInsert } from "@/lib/supabase/database.types";
 import { type ProfileFields, recalculateTargets, recommendTargets } from "./goals";
-import { goalTargets, hasCalculatedTarget } from "./rows";
+import { goalTargets, hasCalculatedTarget, MEAL_COLUMNS } from "./rows";
 
-export type { GoalRow, ProfileRow } from "./rows";
+export type { GoalRow, MealRow, ProfileRow } from "./rows";
 export { goalTargets, hasCalculatedTarget } from "./rows";
 
 /**
@@ -37,6 +37,16 @@ export async function loadGoalOn(supabase: DietClient, userId: string, date: str
     .order("effective_from", { ascending: false })
     .limit(1)
     .maybeSingle();
+}
+
+/** FR-38: one day's food log, in the order eaten. */
+export async function loadMealsOn(supabase: DietClient, userId: string, date: string) {
+  return supabase.from("meal_logs")
+    .select(MEAL_COLUMNS)
+    .eq("user_id", userId)
+    .eq("log_date", date)
+    .order("eaten_at")
+    .order("created_at");
 }
 
 type GoalVersionRow = Omit<TablesInsert<"diet_goals">, "id" | "user_id" | "effective_from" | "created_at" | "updated_at">;

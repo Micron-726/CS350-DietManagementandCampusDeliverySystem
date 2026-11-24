@@ -1,4 +1,5 @@
 import type { ActivityLevel, BodyProfile, GoalMode, Sex, TargetSource } from "./goals";
+import type { MealType } from "./meals";
 
 export const sexLabels: Record<Sex, string> = { male: "남성", female: "여성" };
 
@@ -26,7 +27,11 @@ export const profileFieldLabels: Record<keyof BodyProfile, string> = {
 
 export const targetSourceLabels: Record<TargetSource, string> = { calculated: "추천값", custom: "직접 입력" };
 
+export const mealTypeLabels: Record<MealType, string> = { breakfast: "아침", lunch: "점심", dinner: "저녁", snack: "간식" };
+
 export const kcalNumber = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 });
+/** Logged values may have one decimal (12.5 g). */
+export const nutrientNumber = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
 
 const dayFormat = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", timeZone: "Asia/Seoul" });
 /** "2026-11-25" → "11월 25일" */

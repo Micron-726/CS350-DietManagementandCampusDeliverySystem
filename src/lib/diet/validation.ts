@@ -7,6 +7,7 @@ import {
   type Sex,
   type TargetChoice,
 } from "./goals";
+import { isIsoDate, isTime, MEAL_TYPES, type MealType } from "./meals";
 
 /**
  * Input validation for the profile and goal forms (NFR-07). Runs on the server before anything is
@@ -132,6 +133,61 @@ export function parseGoalInput(raw: Partial<Record<GoalField, unknown>>): Parsed
 
   if (!goalMode || !("value" in calorie) || !("value" in protein) || Object.keys(errors).length) return { ok: false, errors };
   return { ok: true, value: { goalMode, adjustmentKcal, calorie: calorie.value, protein: protein.value } };
+}
+
+/* ───────────────────────────── Food log (FR-12..14) ───────────────────────────── */
+
+/** Per entry. Decimals allowed (e.g. 12.5 g). */
+export const MEAL_LIMITS = {
+  name: 100,
+  kcal: { min: 0, max: 10000 },
+  proteinG: { min: 0, max: 1000 },
+} as const;
+
+export type MealInput = {
+  name: string;
+  date: string;
+  time: string;
+  mealType: MealType | null;
+  /** null = unknown (FR-13). */
+  kcal: number | null;
+  proteinG: number | null;
+};
+export type MealField = keyof MealInput;
+
+/**
+ * `now` is the current Korean date and time; entries can't be dated in the future.
+ */
+export function parseMealInput(
+  raw: Partial<Record<MealField, unknown>>,
+  now: { date: string; time: string },
+): Parsed<MealInput, MealField> {
+  const errors: FieldErrors<MealField> = {};
+
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  if (!name) errors.name = "음식 이름을 입력해 주세요.";
+  else if (name.length > MEAL_LIMITS.name) errors.name = `${MEAL_LIMITS.name}자 이하로 입력해 주세요.`;
+
+  const date = raw.date;
+  if (!isIsoDate(date)) errors.date = "날짜를 확인해 주세요.";
+  else if (date > now.date) errors.date = "오늘 이후 날짜에는 기록할 수 없습니다.";
+
+  const time = raw.time;
+  if (!isTime(time)) errors.time = "시간을 확인해 주세요.";
+  else if (date === now.date && time > now.time) errors.time = "아직 지나지 않은 시각에는 기록할 수 없습니다.";
+
+  const mealType = parseChoice(raw.mealType, MEAL_TYPES);
+  if ("error" in mealType) errors.mealType = mealType.error;
+  const kcal = parseNumber(raw.kcal, MEAL_LIMITS.kcal);
+  if ("error" in kcal) errors.kcal = kcal.error;
+  const proteinG = parseNumber(raw.proteinG, MEAL_LIMITS.proteinG);
+  if ("error" in proteinG) errors.proteinG = proteinG.error;
+
+  if (Object.keys(errors).length || !isIsoDate(date) || !isTime(time) ||
+      !("value" in mealType) || !("value" in kcal) || !("value" in proteinG)) {
+    return { ok: false, errors };
+  }
+  return { ok: true, value: { name, date, time, mealType: mealType.value, kcal: kcal.value, proteinG: proteinG.value } };
 }
 
 /* ───────────────────────────── helpers ───────────────────────────── */

@@ -8,8 +8,8 @@ import type { orderItems } from "@/db/schema";
  *   entry per order. The full item list is read back from `order_items` (an immutable snapshot).
  * - Each line shows per-unit calories/protein and the quantity; the entry's own kcal/protein is the
  *   order total, so the dashboard sums stay correct.
- * - Unknown values are skipped in the total and reported as `missing` (shown as
- *   "일부 메뉴 영양 정보 없음").
+ * - Totals follow the team's menu rule (`totalNutrient` in `src/lib/menu.ts`): if any line's value
+ *   is unknown, the whole total is unknown. The checkout already stores order totals the same way.
  */
 
 export type OrderLine = Pick<
@@ -19,16 +19,16 @@ export type OrderLine = Pick<
 export type NutritionSource = OrderLine["kcalSource"];
 
 export type NutrientTotal = {
-  /** Sum of the known values × quantity. null when no line has a value. */
+  /** Sum of value × quantity. null as soon as one line is unknown. */
   value: number | null;
   /**
-   * - every line known, one source → that source
-   * - every line known, mixed sources → "calculated" (the system added them up)
-   * - some lines unknown → "estimated" (a partial sum)
-   * - no line known → "unavailable"
+   * Same merge as `totalNutrient` in `src/lib/menu.ts`:
+   * - any line unknown → "unavailable"
+   * - an "estimated" or "user" value involved → "estimated"
+   * - otherwise one source → that source; mixed or "calculated" → "calculated"
    */
   source: NutritionSource;
-  /** Number of lines whose value is unknown. */
+  /** Number of lines whose value is unknown (shown per line as "정보 없음"). */
   missing: number;
 };
 
@@ -41,24 +41,19 @@ export function sumNutrient(
   lines: readonly OrderLine[],
   pick: (line: OrderLine) => { value: number | null; source: NutritionSource },
 ): NutrientTotal {
-  let value: number | null = null;
-  let missing = 0;
-  const sources = new Set<NutritionSource>();
-  for (const line of lines) {
-    const nutrient = pick(line);
-    if (nutrient.value === null) {
-      missing += 1;
-      continue;
-    }
-    value = (value ?? 0) + nutrient.value * line.quantity;
-    sources.add(nutrient.source);
+  const nutrients = lines.map(pick);
+  const missing = nutrients.filter(({ value, source }) => value === null || source === "unavailable").length;
+  if (missing > 0 || nutrients.length === 0) return { value: null, source: "unavailable", missing };
+
+  let value = 0;
+  let source: NutritionSource = nutrients[0].source;
+  for (const [index, nutrient] of nutrients.entries()) {
+    value += nutrient.value! * lines[index].quantity; // not null: checked above
+    if (index === 0) continue;
+    if (source === "estimated" || nutrient.source === "estimated" || nutrient.source === "user") source = "estimated";
+    else if (nutrient.source === "calculated" || source !== nutrient.source) source = "calculated";
   }
-  const source: NutritionSource = value === null
-    ? "unavailable"
-    : missing > 0
-      ? "estimated"
-      : sources.size === 1 ? [...sources][0] : "calculated";
-  return { value, source, missing };
+  return { value, source, missing: 0 };
 }
 
 export type OrderLogSummary = {

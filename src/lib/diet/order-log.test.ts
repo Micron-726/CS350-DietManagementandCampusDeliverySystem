@@ -48,21 +48,33 @@ describe("summarizeOrder", () => {
   });
 });
 
-describe("sumNutrient sources", () => {
+describe("sumNutrient follows the team's menu merge rule", () => {
   const kcal = (item: OrderLine) => ({ value: item.kcal, source: item.kcalSource });
 
+  test("one shared source stays that source", () => {
+    assert.deepEqual(sumNutrient([chicken, cola], kcal), { value: 1440, source: "provider", missing: 0 });
+  });
+
   test("mixed known sources become 'calculated'", () => {
-    const total = sumNutrient([chicken, line({ id: "d", kcal: 300, kcalSource: "estimated" })], kcal);
-    assert.deepEqual(total, { value: 1600, source: "calculated", missing: 0 });
+    assert.deepEqual(sumNutrient([chicken, line({ id: "d", kcal: 300, kcalSource: "calculated" })], kcal),
+      { value: 1600, source: "calculated", missing: 0 });
+    assert.deepEqual(sumNutrient([line({ id: "d", kcal: 300, kcalSource: "calculated" }), chicken], kcal),
+      { value: 1600, source: "calculated", missing: 0 });
   });
 
-  test("a partial sum is 'estimated' and counts the missing lines", () => {
+  test("an estimated or user value makes the total 'estimated'", () => {
+    assert.equal(sumNutrient([chicken, line({ id: "d", kcal: 300, kcalSource: "estimated" })], kcal).source, "estimated");
+    assert.equal(sumNutrient([chicken, line({ id: "d", kcal: 300, kcalSource: "user" })], kcal).source, "estimated");
+    assert.equal(sumNutrient([line({ id: "d", kcal: 300, kcalSource: "estimated" }), chicken], kcal).source, "estimated");
+  });
+
+  test("one unknown line makes the whole total unknown", () => {
     const unknown = line({ id: "e", kcal: null, kcalSource: "unavailable", quantity: 3 });
-    assert.deepEqual(sumNutrient([chicken, unknown], kcal), { value: 1300, source: "estimated", missing: 1 });
+    assert.deepEqual(sumNutrient([chicken, unknown], kcal), { value: null, source: "unavailable", missing: 1 });
+    assert.deepEqual(sumNutrient([unknown, unknown], kcal), { value: null, source: "unavailable", missing: 2 });
   });
 
-  test("no known value is 'unavailable' with a null total", () => {
-    const unknown = line({ id: "f", kcal: null, kcalSource: "unavailable" });
-    assert.deepEqual(sumNutrient([unknown, unknown], kcal), { value: null, source: "unavailable", missing: 2 });
+  test("an empty order has no total", () => {
+    assert.deepEqual(sumNutrient([], kcal), { value: null, source: "unavailable", missing: 0 });
   });
 });
