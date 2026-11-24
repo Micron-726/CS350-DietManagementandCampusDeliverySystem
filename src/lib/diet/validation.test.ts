@@ -51,20 +51,22 @@ describe("parseProfileInput", () => {
 });
 
 describe("parseGoalInput", () => {
+  const calculated = { calorieSource: "calculated", proteinSource: "calculated" };
+
   test("maintenance ignores any adjustment the form sent", () => {
-    assert.deepEqual(parseGoalInput({ goalMode: "maintenance", adjustmentKcal: "300" }), {
+    assert.deepEqual(parseGoalInput({ goalMode: "maintenance", adjustmentKcal: "300", ...calculated }), {
       ok: true,
-      value: { goalMode: "maintenance", adjustmentKcal: 0, customCalorieKcal: null, customProteinG: null },
+      value: { goalMode: "maintenance", adjustmentKcal: 0, calorie: { source: "calculated" }, protein: { source: "calculated" } },
     });
   });
 
   test("deficit and surplus need one of the allowed adjustments", () => {
-    assert.deepEqual(parseGoalInput({ goalMode: "deficit", adjustmentKcal: "400" }), {
+    assert.deepEqual(parseGoalInput({ goalMode: "deficit", adjustmentKcal: "400", ...calculated }), {
       ok: true,
-      value: { goalMode: "deficit", adjustmentKcal: 400, customCalorieKcal: null, customProteinG: null },
+      value: { goalMode: "deficit", adjustmentKcal: 400, calorie: { source: "calculated" }, protein: { source: "calculated" } },
     });
     for (const bad of ["", "0", "150", "500", "abc"]) {
-      const result = parseGoalInput({ goalMode: "surplus", adjustmentKcal: bad });
+      const result = parseGoalInput({ goalMode: "surplus", adjustmentKcal: bad, ...calculated });
       assert.ok(!result.ok, bad);
       assert.ok(result.errors.adjustmentKcal, bad);
     }
@@ -72,20 +74,47 @@ describe("parseGoalInput", () => {
 
   test("goal mode is required", () => {
     for (const bad of [undefined, "", "bulk"]) {
-      const result = parseGoalInput({ goalMode: bad });
+      const result = parseGoalInput({ goalMode: bad, ...calculated });
       assert.ok(!result.ok);
       assert.ok(result.errors.goalMode);
     }
   });
 
-  test("custom targets are optional whole numbers within sane bounds", () => {
-    assert.deepEqual(parseGoalInput({ goalMode: "maintenance", customCalorieKcal: "1800", customProteinG: "0" }), {
+  test("each target is either calculated or a typed-in whole number", () => {
+    assert.deepEqual(parseGoalInput({
+      goalMode: "maintenance", calorieSource: "custom", customCalorieKcal: "1800", proteinSource: "custom", customProteinG: "0",
+    }), {
       ok: true,
-      value: { goalMode: "maintenance", adjustmentKcal: 0, customCalorieKcal: 1800, customProteinG: 0 },
+      value: { goalMode: "maintenance", adjustmentKcal: 0, calorie: { source: "custom", value: 1800 }, protein: { source: "custom", value: 0 } },
     });
-    const result = parseGoalInput({ goalMode: "maintenance", customCalorieKcal: "0", customProteinG: "120.5" });
+  });
+
+  test("calorie and protein can use different sources", () => {
+    const result = parseGoalInput({ goalMode: "maintenance", calorieSource: "custom", customCalorieKcal: "2000", proteinSource: "calculated" });
+    assert.ok(result.ok);
+    assert.deepEqual([result.value.calorie, result.value.protein], [{ source: "custom", value: 2000 }, { source: "calculated" }]);
+  });
+
+  test("a calculated target ignores the number box, even if it holds garbage", () => {
+    const result = parseGoalInput({ goalMode: "maintenance", ...calculated, customCalorieKcal: "abc", customProteinG: "-5" });
+    assert.ok(result.ok);
+  });
+
+  test("a custom target needs a value within sane bounds", () => {
+    const blank = parseGoalInput({ goalMode: "maintenance", calorieSource: "custom", customCalorieKcal: " ", proteinSource: "calculated" });
+    assert.ok(!blank.ok);
+    assert.equal(blank.errors.customCalorieKcal, "직접 입력할 값을 적어 주세요.");
+    const result = parseGoalInput({
+      goalMode: "maintenance", calorieSource: "custom", customCalorieKcal: "0", proteinSource: "custom", customProteinG: "120.5",
+    });
     assert.ok(!result.ok);
     assert.deepEqual(Object.keys(result.errors).sort(), ["customCalorieKcal", "customProteinG"]);
-    assert.ok(!parseGoalInput({ goalMode: "maintenance", customCalorieKcal: "10001" }).ok);
+    assert.ok(!parseGoalInput({ goalMode: "maintenance", calorieSource: "custom", customCalorieKcal: "10001", proteinSource: "calculated" }).ok);
+  });
+
+  test("the source must be one of the two choices", () => {
+    const result = parseGoalInput({ goalMode: "maintenance", calorieSource: "auto", proteinSource: undefined });
+    assert.ok(!result.ok);
+    assert.deepEqual(Object.keys(result.errors).sort(), ["calorieSource", "proteinSource"]);
   });
 });

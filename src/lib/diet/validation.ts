@@ -5,6 +5,7 @@ import {
   type GoalMode,
   isValidAdjustment,
   type Sex,
+  type TargetChoice,
 } from "./goals";
 
 /**
@@ -86,11 +87,25 @@ export function parseProfileInput(raw: Partial<Record<ProfileField, unknown>>): 
 export type GoalInput = {
   goalMode: GoalMode;
   adjustmentKcal: AdjustmentKcal;
-  /** null = use the calculated recommendation for this target. */
-  customCalorieKcal: number | null;
-  customProteinG: number | null;
+  calorie: TargetChoice;
+  protein: TargetChoice;
 };
-export type GoalField = keyof GoalInput;
+/** Form field names. `*Source` is "calculated" (use the recommendation) or "custom". */
+export type GoalField = "goalMode" | "adjustmentKcal" | "calorieSource" | "customCalorieKcal" | "proteinSource" | "customProteinG";
+
+/** A custom target needs a value; a calculated one ignores whatever is in the number box. */
+function parseTarget(
+  source: unknown,
+  value: unknown,
+  rule: NumberRule,
+): { value: TargetChoice } | { sourceError: string } | { valueError: string } {
+  if (source === "calculated") return { value: { source: "calculated" } };
+  if (source !== "custom") return { sourceError: "추천값 사용 또는 직접 입력을 선택해 주세요." };
+  const parsed = parseNumber(value, rule);
+  if ("error" in parsed) return { valueError: parsed.error };
+  if (parsed.value === null) return { valueError: "직접 입력할 값을 적어 주세요." };
+  return { value: { source: "custom", value: parsed.value } };
+}
 
 export function parseGoalInput(raw: Partial<Record<GoalField, unknown>>): Parsed<GoalInput, GoalField> {
   const errors: FieldErrors<GoalField> = {};
@@ -108,21 +123,15 @@ export function parseGoalInput(raw: Partial<Record<GoalField, unknown>>): Parsed
     else errors.adjustmentKcal = "조정량은 100, 200, 300, 400 kcal 중에서 선택해 주세요.";
   }
 
-  const calorie = parseNumber(raw.customCalorieKcal, { ...CUSTOM_TARGET_LIMITS.calorieKcal, integer: true });
-  if ("error" in calorie) errors.customCalorieKcal = calorie.error;
-  const protein = parseNumber(raw.customProteinG, { ...CUSTOM_TARGET_LIMITS.proteinG, integer: true });
-  if ("error" in protein) errors.customProteinG = protein.error;
+  const calorie = parseTarget(raw.calorieSource, raw.customCalorieKcal, { ...CUSTOM_TARGET_LIMITS.calorieKcal, integer: true });
+  if ("sourceError" in calorie) errors.calorieSource = calorie.sourceError;
+  if ("valueError" in calorie) errors.customCalorieKcal = calorie.valueError;
+  const protein = parseTarget(raw.proteinSource, raw.customProteinG, { ...CUSTOM_TARGET_LIMITS.proteinG, integer: true });
+  if ("sourceError" in protein) errors.proteinSource = protein.sourceError;
+  if ("valueError" in protein) errors.customProteinG = protein.valueError;
 
-  if (!goalMode || Object.keys(errors).length) return { ok: false, errors };
-  return {
-    ok: true,
-    value: {
-      goalMode,
-      adjustmentKcal,
-      customCalorieKcal: "value" in calorie ? calorie.value : null,
-      customProteinG: "value" in protein ? protein.value : null,
-    },
-  };
+  if (!goalMode || !("value" in calorie) || !("value" in protein) || Object.keys(errors).length) return { ok: false, errors };
+  return { ok: true, value: { goalMode, adjustmentKcal, calorie: calorie.value, protein: protein.value } };
 }
 
 /* ───────────────────────────── helpers ───────────────────────────── */

@@ -1,4 +1,4 @@
-import type { ActivityLevel, GoalMode, Sex } from "./goals";
+import type { ActivityLevel, BodyProfile, GoalMode, Sex, TargetSource } from "./goals";
 
 export const sexLabels: Record<Sex, string> = { male: "남성", female: "여성" };
 
@@ -16,4 +16,20 @@ export const goalModeLabels: Record<GoalMode, string> = {
   surplus: "증량",
 };
 
+export const profileFieldLabels: Record<keyof BodyProfile, string> = {
+  heightCm: "키",
+  weightKg: "체중",
+  age: "나이",
+  sex: "성별",
+  activityLevel: "활동량",
+};
+
+export const targetSourceLabels: Record<TargetSource, string> = { calculated: "추천값", custom: "직접 입력" };
+
 export const kcalNumber = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 0 });
+
+const dayFormat = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", timeZone: "Asia/Seoul" });
+/** "2026-11-25" → "11월 25일" */
+export function dayLabel(date: string) {
+  return dayFormat.format(new Date(`${date}T12:00:00+09:00`));
+}

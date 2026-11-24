@@ -40,7 +40,14 @@ export type BodyProfile = {
   activityLevel: ActivityLevel;
 };
 
-type ProfileFields = { [K in keyof BodyProfile]: BodyProfile[K] | null | undefined };
+export type ProfileFields = { [K in keyof BodyProfile]: BodyProfile[K] | null | undefined };
+
+const PROFILE_FIELDS = ["heightCm", "weightKg", "age", "sex", "activityLevel"] as const;
+
+/** Fields the formula needs that are still empty, in form order. */
+export function missingProfileFields(profile: ProfileFields): (keyof BodyProfile)[] {
+  return PROFILE_FIELDS.filter((field) => profile[field] == null);
+}
 
 /** The profile as a `BodyProfile`, or null when any field the formula needs is missing. */
 export function completeProfile(profile: ProfileFields): BodyProfile | null {
@@ -78,9 +85,10 @@ export type Recommendation = {
   proteinG: number;
 };
 
+export type RecommendationFailure = "incomplete_profile" | "invalid_adjustment" | "non_positive_calories";
 export type RecommendationResult =
   | { ok: true; value: Recommendation }
-  | { ok: false; reason: "incomplete_profile" | "invalid_adjustment" | "non_positive_calories" };
+  | { ok: false; reason: RecommendationFailure };
 
 /**
  * FR-04: recommended daily targets from the profile and the chosen goal mode.
@@ -116,6 +124,51 @@ export type GoalTargets = {
   proteinTargetG: number;
   proteinTargetSource: TargetSource;
 };
+
+/** FR-05: per target, either the recommendation or a value the user typed in. */
+export type TargetChoice = { source: "calculated" } | { source: "custom"; value: number };
+
+export type GoalVersion = GoalTargets & {
+  goalMode: GoalMode;
+  adjustmentKcal: AdjustmentKcal;
+  /** FR-04: what the system recommended, kept even when the user overrides it. null if not computable. */
+  recommendedKcal: number | null;
+  recommendedProteinG: number | null;
+};
+
+export type GoalVersionResult =
+  | { ok: true; value: GoalVersion }
+  | { ok: false; reason: RecommendationFailure; targets: ("calorie" | "protein")[] };
+
+/**
+ * The goal row to save from the goal form (FR-03..07). Fails when a target should use the
+ * recommendation but none can be computed; `targets` names the targets that need a typed-in value.
+ */
+export function buildGoalVersion(
+  input: { goalMode: GoalMode; adjustmentKcal: AdjustmentKcal; calorie: TargetChoice; protein: TargetChoice },
+  profile: ProfileFields,
+): GoalVersionResult {
+  const recommendation = recommendTargets(profile, input.goalMode, input.adjustmentKcal);
+  const needs = (["calorie", "protein"] as const).filter((target) => input[target].source === "calculated");
+  if (!recommendation.ok && needs.length) return { ok: false, reason: recommendation.reason, targets: needs };
+
+  const recommended = recommendation.ok ? recommendation.value : null;
+  const pick = (choice: TargetChoice, value: number | undefined) =>
+    choice.source === "custom" ? choice.value : value!; // value exists: checked above
+  return {
+    ok: true,
+    value: {
+      goalMode: input.goalMode,
+      adjustmentKcal: input.adjustmentKcal,
+      recommendedKcal: recommended?.calorieKcal ?? null,
+      recommendedProteinG: recommended?.proteinG ?? null,
+      calorieTargetKcal: pick(input.calorie, recommended?.calorieKcal),
+      calorieTargetSource: input.calorie.source,
+      proteinTargetG: pick(input.protein, recommended?.proteinG),
+      proteinTargetSource: input.protein.source,
+    },
+  };
+}
 
 /**
  * Apply a new recommendation to an existing goal. Only targets whose source is "calculated" are

@@ -3,6 +3,7 @@
 import { CircleCheck, Info } from "lucide-react";
 import { useActionState, useId, useState } from "react";
 import { SelectField, TextField } from "@/components/diet/fields";
+import { useSubmitWithoutReset } from "@/components/diet/use-submit-without-reset";
 import { ErrorMessage } from "@/components/page-ui";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { NativeSelectOption } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
-import type { ProfileRow } from "@/lib/diet/data";
+import type { ProfileRow } from "@/lib/diet/rows";
 import { ACTIVITY_FACTORS, type ActivityLevel, type GoalMode, type GoalTargets, recalculateTargets, recommendTargets } from "@/lib/diet/goals";
 import { activityLabels, kcalNumber, sexLabels } from "@/lib/diet/labels";
 import { PROFILE_LIMITS, parseProfileInput } from "@/lib/diet/validation";
@@ -23,6 +24,7 @@ const text = (value: number | string | null) => (value === null ? "" : String(va
 
 export function ProfileForm({ profile, goal }: { profile: ProfileRow; goal: CurrentGoal }) {
   const [state, formAction, pending] = useActionState(saveProfile, initialState);
+  const submit = useSubmitWithoutReset(formAction);
   const [values, setValues] = useState({
     heightCm: text(profile.height_cm),
     weightKg: text(profile.weight_kg),
@@ -45,7 +47,7 @@ export function ProfileForm({ profile, goal }: { profile: ProfileRow; goal: Curr
   const preview = previewRecalculation(values, goal);
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form onSubmit={submit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle><h2>내 정보</h2></CardTitle>

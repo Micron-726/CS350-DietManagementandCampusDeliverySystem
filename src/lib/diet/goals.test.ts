@@ -4,9 +4,11 @@ import {
   ACTIVITY_FACTORS,
   type BodyProfile,
   bmrKcal,
+  buildGoalVersion,
   completeProfile,
   isValidAdjustment,
   maintenanceKcal,
+  missingProfileFields,
   recalculateTargets,
   recommendTargets,
   type GoalTargets,
@@ -125,5 +127,57 @@ describe("recalculateTargets", () => {
   test("reports no change when the recommendation is the same", () => {
     const current: GoalTargets = { calorieTargetKcal: 2100, calorieTargetSource: "calculated", proteinTargetG: 110, proteinTargetSource: "calculated" };
     assert.equal(recalculateTargets(current, recommendation).changed, false);
+  });
+});
+
+test("missingProfileFields lists empty fields in form order", () => {
+  assert.deepEqual(missingProfileFields(man), []);
+  assert.deepEqual(missingProfileFields({ ...man, activityLevel: null, heightCm: undefined }), ["heightCm", "activityLevel"]);
+});
+
+describe("buildGoalVersion", () => {
+  const calculated = { source: "calculated" } as const;
+
+  test("uses the recommendation for calculated targets and keeps it as recommended_*", () => {
+    assert.deepEqual(buildGoalVersion({ goalMode: "deficit", adjustmentKcal: 300, calorie: calculated, protein: calculated }, man), {
+      ok: true,
+      value: {
+        goalMode: "deficit", adjustmentKcal: 300, recommendedKcal: 2294, recommendedProteinG: 112,
+        calorieTargetKcal: 2294, calorieTargetSource: "calculated", proteinTargetG: 112, proteinTargetSource: "calculated",
+      },
+    });
+  });
+
+  test("custom targets win, but the recommendation is still recorded", () => {
+    const result = buildGoalVersion({
+      goalMode: "maintenance", adjustmentKcal: 0, calorie: { source: "custom", value: 2000 }, protein: calculated,
+    }, man);
+    assert.ok(result.ok);
+    assert.deepEqual(result.value, {
+      goalMode: "maintenance", adjustmentKcal: 0, recommendedKcal: 2594, recommendedProteinG: 112,
+      calorieTargetKcal: 2000, calorieTargetSource: "custom", proteinTargetG: 112, proteinTargetSource: "calculated",
+    });
+  });
+
+  test("an incomplete profile works when both targets are custom, without recommended_*", () => {
+    const result = buildGoalVersion({
+      goalMode: "surplus", adjustmentKcal: 200, calorie: { source: "custom", value: 2500 }, protein: { source: "custom", value: 120 },
+    }, { ...man, sex: null });
+    assert.ok(result.ok);
+    assert.equal(result.value.recommendedKcal, null);
+    assert.equal(result.value.recommendedProteinG, null);
+    assert.equal(result.value.calorieTargetKcal, 2500);
+  });
+
+  test("fails and names the targets that need a value when nothing can be recommended", () => {
+    assert.deepEqual(
+      buildGoalVersion({ goalMode: "maintenance", adjustmentKcal: 0, calorie: { source: "custom", value: 1800 }, protein: calculated }, { ...man, age: null }),
+      { ok: false, reason: "incomplete_profile", targets: ["protein"] },
+    );
+    const tiny = { heightCm: 50, weightKg: 20, age: 120, sex: "female", activityLevel: "sedentary" } as const;
+    assert.deepEqual(
+      buildGoalVersion({ goalMode: "deficit", adjustmentKcal: 400, calorie: calculated, protein: calculated }, tiny),
+      { ok: false, reason: "non_positive_calories", targets: ["calorie", "protein"] },
+    );
   });
 });
