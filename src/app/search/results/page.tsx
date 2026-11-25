@@ -11,6 +11,11 @@ const num = (v: string | string[] | undefined) => {
   return v && Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
+const coord = (v: string | string[] | undefined) => {
+  const n = Number(Array.isArray(v) ? v[0] : v);
+  return v && Number.isFinite(n) ? n : undefined;
+};
+
 async function Results({ searchParams }: { searchParams: Params }) {
   await connection();
   const sp = await searchParams;
@@ -28,13 +33,21 @@ async function Results({ searchParams }: { searchParams: Params }) {
     return <p className="text-red-600">Please enter calories or protein.</p>;
   }
 
-  // no user location yet, so the distance limit is ignored for now
-  const { results, widenFactor, restaurantInfo } = await searchMeals(criteria);
+  const lat = coord(sp.lat);
+  const lng = coord(sp.lng);
+  const location = lat !== undefined && lng !== undefined ? { lat, lng } : undefined;
+
+  const { results, widenFactor, restaurantInfo } = await searchMeals(criteria, location);
 
   if (results.length === 0) return <p>No meals found.</p>;
 
   return (
     <div className="space-y-3">
+      {criteria.maxDistanceM && !location && (
+        <p className="text-sm text-amber-700">
+            Distance limit ignored because your location is off.
+        </p>
+        )}
       {widenFactor > 1 && (
         <p className="text-sm text-amber-700">
           No exact matches, so the range was widened to {widenFactor}x.

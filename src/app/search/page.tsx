@@ -1,3 +1,5 @@
+import LocationButton from "./locationbutton";
+
 export default function SearchPage() {
   return (
     <main className="mx-auto max-w-xl p-6">
@@ -47,6 +49,8 @@ export default function SearchPage() {
             className="mt-1 w-full rounded border p-2"
           />
         </label>
+
+        <LocationButton />
 
         <label className="block">
           <span className="text-sm">What matters most?</span>
