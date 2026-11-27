@@ -13,7 +13,9 @@
     "cafeteria:account": "tsx scripts/kaist/create-account.ts",
     "cafeteria:sync": "tsx scripts/kaist/sync.ts",
     "cafeteria:test": "tsx --test scripts/kaist/cafeteria.test.ts",
-    "diet:test": "tsx --test \"src/lib/diet/**/*.test.ts\""
+    "diet:test": "tsx --test \"src/lib/diet/**/*.test.ts\"",
+    "ranking:test": "vitest run src/lib/ranking.test.ts",
+    "test": "npm run ranking:test && npm run diet:test && npm run cafeteria:test"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -22,11 +24,13 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "drizzle-orm": "^0.45.4",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.79.0",
     "next": "16.4.6",
     "postgres": "^4.1.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-leaflet": "^5.0.0",
     "recharts": "^3.8.0",
     "server-only": "^0.0.1",
     "shadcn": "^4.23.0",
@@ -34,6 +38,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
+    "@types/leaflet": "^1.9.20",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -45,6 +50,7 @@
     "supabase": "^3.1.0",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
