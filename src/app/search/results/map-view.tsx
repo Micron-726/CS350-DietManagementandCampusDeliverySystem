@@ -24,7 +24,7 @@ export default function MapView({
         ? { bounds: points, boundsOptions: { padding: [30, 30] } }
         : { center: points[0], zoom: 16 })}
       scrollWheelZoom={false}
-      className="mb-4 h-72 w-full rounded border"
+      className="z-0 h-72 w-full"
     >
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"
@@ -37,7 +37,7 @@ export default function MapView({
       ))}
       {user && (
         <CircleMarker center={[user.lat, user.lng]} radius={9} pathOptions={{ color: "#dc2626" }}>
-          <Popup>You are here</Popup>
+          <Popup>내 위치</Popup>
         </CircleMarker>
       )}
     </MapContainer>

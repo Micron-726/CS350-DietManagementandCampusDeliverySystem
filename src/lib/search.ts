@@ -1,7 +1,8 @@
 import "server-only";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
-import { menuComponents, menuItems, portionLevels, restaurants } from "@/db/schema";
+import { menuComponents, menuItems, portionLevels, providers, restaurants } from "@/db/schema";
+import { menuServedOn } from "@/lib/menu-data";
 import {
   type Candidate,
   type ComponentOptions,
@@ -26,8 +27,17 @@ export async function loadCandidates(location?: UserLocation) {
     .select({ item: menuItems, restaurant: restaurants })
     .from(menuItems)
     .innerJoin(restaurants, eq(menuItems.restaurantId, restaurants.id))
-    // integration: menu prices became nullable (unpublished prices); such items can't be ranked
-    .where(and(eq(menuItems.isAvailable, true), isNotNull(menuItems.basePriceKrw)));
+    .innerJoin(providers, eq(restaurants.providerId, providers.id))
+    .where(and(
+      eq(menuItems.isAvailable, true),
+      // integration: menu prices became nullable (unpublished prices); such items can't be ranked
+      isNotNull(menuItems.basePriceKrw),
+      // integration: same filters as the home page — open restaurants, and for the rotating
+      // cafeteria menus only today's offering
+      eq(restaurants.isActive, true),
+      eq(providers.isActive, true),
+      menuServedOn(),
+    ));
 
   const itemIds = rows.map((r) => r.item.id);
   const componentRows = itemIds.length

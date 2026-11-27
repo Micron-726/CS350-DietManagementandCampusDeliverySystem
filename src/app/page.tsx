@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { ArrowRight, ImageIcon, MapPin, Utensils } from "lucide-react";
+import { ArrowRight, MapPin, Search, SlidersHorizontal, Utensils } from "lucide-react";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ButtonLink } from "@/components/button-link";
@@ -13,6 +13,7 @@ import { dateInKorea } from "@/lib/korea-date";
 import { menuServedOn } from "@/lib/menu-data";
 import { dietClient, loadFirstGoalDate, loadGoalOn, loadMealsOn } from "@/lib/diet/data";
 import { dayTotals } from "@/lib/diet/meals";
+import { remainingSearchHref, remainingTargets, type RemainingTargets } from "@/lib/search-targets";
 
 const dateLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long", timeZone: "Asia/Seoul" });
 
@@ -45,12 +46,14 @@ async function Dashboard() {
   ]);
 
   const dashboardError = meals.error || goal.error || firstGoal.error;
+  const totals = dayTotals((meals.data ?? []).map((meal) => ({ kcal: meal.kcal, proteinG: meal.protein_g })));
+  const remaining = dashboardError ? {} : remainingTargets(goal.data, totals);
 
   return (
     <>
       {dashboardError || !meals.data ? <ErrorMessage>오늘의 식단 정보를 불러올 수 없습니다.</ErrorMessage> : (
         <DayDashboard date={today} today={today} goal={goal.data} firstGoalDate={firstGoal.data?.effective_from ?? null} diaryLink
-          totals={dayTotals(meals.data.map((meal) => ({ kcal: meal.kcal, proteinG: meal.protein_g })))} />
+          totals={totals} />
       )}
 
       <section aria-labelledby="home-title" className="overflow-hidden rounded-3xl border bg-card text-card-foreground sm:grid sm:grid-cols-[1.05fr_1fr]">
@@ -62,11 +65,7 @@ async function Dashboard() {
             교내 식당 보기<ArrowRight data-icon="inline-end" />
           </ButtonLink>
         </div>
-        <div aria-hidden="true" className="grid min-h-44 place-items-center border-t bg-muted text-muted-foreground sm:border-t-0 sm:border-l">
-          <span className="grid size-16 place-items-center rounded-2xl border bg-card">
-            <ImageIcon className="size-7" strokeWidth={1.5} />
-          </span>
-        </div>
+        <QuickSearch remaining={remaining} hasGoal={Boolean(goal.data)} />
       </section>
 
       <section aria-labelledby="daily-menus" className="flex flex-col gap-4">
@@ -87,5 +86,46 @@ async function Dashboard() {
       </section>
 
     </>
+  );
+}
+
+/** IR-02: meal search entry on the home page, prefilled with what is left of today's goal. */
+function QuickSearch({ remaining, hasGoal }: { remaining: RemainingTargets; hasGoal: boolean }) {
+  const href = remainingSearchHref(remaining);
+  return (
+    <div className="flex flex-col justify-center gap-5 border-t bg-muted px-6 py-8 sm:border-t-0 sm:border-l sm:px-9 lg:px-12">
+      <div className="flex flex-col gap-1.5">
+        <h2 className="text-lg font-semibold">{href ? "남은 목표에 맞는 메뉴" : "목표에 맞는 메뉴 찾기"}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {href ? "오늘 목표에서 지금까지 먹은 양을 빼고 찾아 드립니다."
+            : hasGoal ? "오늘 목표를 다 채웠습니다. 원하는 양을 직접 정해 찾아보세요."
+              : "칼로리·단백질 목표와 가격, 거리를 정하면 교내 메뉴를 추천합니다."}
+        </p>
+      </div>
+      {href && (
+        <dl className="grid grid-cols-2 gap-3">
+          <RemainingStat label="남은 칼로리" value={remaining.kcal} unit="kcal" />
+          <RemainingStat label="남은 단백질" value={remaining.protein} unit="g" />
+        </dl>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {href && <ButtonLink href={href} size="lg"><Search data-icon="inline-start" />이대로 찾기</ButtonLink>}
+        <ButtonLink href="/search" size="lg" variant={href ? "outline" : "default"}>
+          {href ? <SlidersHorizontal data-icon="inline-start" /> : <Search data-icon="inline-start" />}
+          {href ? "조건 정하기" : "메뉴 찾기"}
+        </ButtonLink>
+      </div>
+    </div>
+  );
+}
+
+function RemainingStat({ label, value, unit }: { label: string; value?: number; unit: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 rounded-xl border bg-card px-4 py-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-2xl font-bold tracking-tight tabular-nums">
+        {value === undefined ? "—" : value.toLocaleString("ko-KR")}<span className="ml-1 text-sm font-medium text-muted-foreground">{unit}</span>
+      </dd>
+    </div>
   );
 }

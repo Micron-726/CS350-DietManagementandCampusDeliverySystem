@@ -1,16 +1,34 @@
 "use client";
 
+import { ArrowRight, CookingPot } from "lucide-react";
 import { useState } from "react";
-import type { ComponentOptions, RankedResult } from "@/lib/ranking";
+import { ButtonLink } from "@/components/button-link";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { Slider } from "@/components/ui/slider";
+import { won } from "@/lib/menu";
+import type { ComponentOptions, RankedResult, Violation } from "@/lib/ranking";
+import { cn } from "@/lib/utils";
 
 type Props = {
+  rank: number;
   result: RankedResult;
   restaurantName?: string;
   targetKcal?: number;
   targetProteinG?: number;
 };
 
-export default function MealCard({ result, restaurantName, targetKcal, targetProteinG }: Props) {
+const violationLabels: Record<Violation, string> = {
+  kcal: "칼로리 범위 밖",
+  protein: "단백질 범위 밖",
+  price: "가격 초과",
+  distance: "거리 초과",
+};
+
+const number = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 1 });
+
+export default function MealCard({ rank, result, restaurantName, targetKcal, targetProteinG }: Props) {
   const meal = result.candidate;
   const comps = meal.components.filter((c) => c.levels.length > 0);
 
@@ -43,64 +61,85 @@ export default function MealCard({ result, restaurantName, targetKcal, targetPro
   };
 
   return (
-    <div className="rounded border p-4">
-      <div className="flex justify-between">
-        <h2 className="font-semibold">{meal.name}</h2>
-        <span className="text-sm text-gray-500">{restaurantName}</span>
-      </div>
+    <li className="min-w-0">
+      <Card className="h-full">
+        <CardHeader>
+          <CardDescription className="flex items-center gap-1.5">
+            <CookingPot className="size-3.5 shrink-0" aria-hidden="true" />{restaurantName}
+          </CardDescription>
+          <CardTitle>
+            <h2 className="flex items-baseline gap-2">
+              <span className="text-muted-foreground tabular-nums" aria-label={`${rank}위`}>{rank}</span>
+              <span>{meal.name}</span>
+            </h2>
+          </CardTitle>
+          <CardAction>
+            {!changed && (result.violations.length === 0
+              ? <Badge>조건 충족</Badge>
+              : <Badge variant="destructive">{result.violations.map((v) => violationLabels[v]).join(" · ")}</Badge>)}
+          </CardAction>
+        </CardHeader>
 
-      <p className="text-sm">
-        {kcal ?? "?"} kcal · {protein ?? "?"} g protein · {price.toLocaleString()} KRW
-      </p>
+        <CardContent className="flex flex-col gap-5">
+          <dl aria-live="polite" className="grid grid-cols-3 gap-3">
+            <Stat label="열량" value={kcal === null ? null : `${number.format(kcal)} kcal`}
+              note={kcal === null ? "정보 없음" : targetKcal ? `목표 ${percent(kcal, targetKcal)}` : sourceLabel(meal.kcalExact)} />
+            <Stat label="단백질" value={protein === null ? null : `${number.format(protein)} g`}
+              note={protein === null ? "정보 없음" : targetProteinG ? `목표 ${percent(protein, targetProteinG)}` : sourceLabel(meal.proteinExact)} />
+            <Stat label="가격" value={won.format(price)} />
+          </dl>
 
-      {(targetKcal || targetProteinG) && (
-        <p className="text-xs text-gray-500">
-          {targetKcal && kcal !== null ? `Calories ${percent(kcal, targetKcal)}` : ""}
-          {targetProteinG && protein !== null ? ` · Protein ${percent(protein, targetProteinG)}` : ""}
-        </p>
-      )}
+          {comps.length > 0 && (
+            <FieldGroup className="gap-4">
+              {comps.map((comp) => {
+                const index = picked[comp.componentId];
+                const level = comp.levels[index];
+                const name = level.componentName;
+                return (
+                  <Field key={comp.componentId} className="gap-2">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <span>{name}</span>
+                      <Badge variant="secondary">{level.label}</Badge>
+                    </div>
+                    {/* a slider only makes sense with 2 or more levels (FR-29) */}
+                    {comp.levels.length > 1 && (
+                      <Slider min={0} max={comp.levels.length - 1} value={[index]}
+                        thumbLabel={name} valueText={level.label}
+                        onValueChange={(values) => {
+                          const value = Array.isArray(values) ? values[0] : values;
+                          setPicked((p) => ({ ...p, [comp.componentId]: value }));
+                        }} />
+                    )}
+                  </Field>
+                );
+              })}
+            </FieldGroup>
+          )}
+        </CardContent>
 
-      {comps.length > 0 && (
-        <div className="mt-3 space-y-2">
-          {comps.map((comp) => {
-            const index = picked[comp.componentId];
-            const level = comp.levels[index];
-            const name = level.componentName;
-            // a slider only makes sense with 2 or more levels
-            if (comp.levels.length < 2) {
-              return (
-                <p key={comp.componentId} className="text-xs text-gray-500">
-                  {name}: {level.label}
-                </p>
-              );
-            }
-            return (
-              <label key={comp.componentId} className="block text-xs">
-                <span className="flex justify-between">
-                  <span>{name}</span>
-                  <span className="font-medium">{level.label}</span>
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={comp.levels.length - 1}
-                  step={1}
-                  value={index}
-                  onChange={(e) =>
-                    setPicked((p) => ({ ...p, [comp.componentId]: Number(e.target.value) }))
-                  }
-                  className="w-full"
-                />
-              </label>
-            );
-          })}
-        </div>
-      )}
+        <CardFooter className="mt-auto flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">
+            {result.exact ? "영양 정보: 가게 제공" : "영양 정보: 추정값"}
+          </span>
+          <ButtonLink href={`/restaurants/${meal.restaurantId}/${meal.menuItemId}`} variant="outline" size="sm">
+            메뉴 보고 주문하기<ArrowRight data-icon="inline-end" />
+          </ButtonLink>
+        </CardFooter>
+      </Card>
+    </li>
+  );
+}
 
-      {!changed && result.violations.length > 0 && (
-        <p className="mt-2 text-xs text-red-600">Misses: {result.violations.join(", ")}</p>
-      )}
-      {!result.exact && <p className="text-xs text-gray-400">Nutrition values are estimates</p>}
+function sourceLabel(exact: boolean) {
+  return exact ? "가게 제공" : "추정값";
+}
+
+function Stat({ label, value, note }: { label: string; value: string | null; note?: string }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={cn("font-semibold tabular-nums", value === null && "text-muted-foreground")}>{value ?? "—"}</dd>
+      {note && <dd className="text-xs text-muted-foreground tabular-nums">{note}</dd>}
     </div>
   );
 }
